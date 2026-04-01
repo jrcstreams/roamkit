@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoamKit</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app" id="app">
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="app-brand">
+        <span class="brand-icon">✈</span>
+        <span class="brand-name">RoamKit</span>
+      </div>
+      <div class="sidebar-header-btns">
+        <button id="btn-help" class="btn-icon sidebar-btn" title="How to use RoamKit">?</button>
+        <button id="btn-toggle-sidebar" class="btn-icon sidebar-btn" title="Toggle sidebar">☰</button>
+      </div>
+    </div>
+    <!-- Sidebar controls above trips list -->
+    <div class="sidebar-controls">
+      <div class="sidebar-ctrl-row">
+        <button class="btn-sidebar-ctrl" id="btn-export-all"><svg class="si" viewBox="0 0 10 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="1" x2="5" y2="7.5"/><polyline points="2,5 5,7.5 8,5"/><line x1="1" y1="10.5" x2="9" y2="10.5"/></svg> Export Trips</button>
+        <button class="btn-sidebar-ctrl" id="btn-import-all"><svg class="si" viewBox="0 0 10 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="7.5" x2="5" y2="1"/><polyline points="2,3.5 5,1 8,3.5"/><line x1="1" y1="10.5" x2="9" y2="10.5"/></svg> Import Trips</button>
+      </div>
+      <div class="sidebar-ctrl-row">
+        <button class="btn-sidebar-ctrl btn-sidebar-ctrl-primary" id="btn-add-trip-default">+ Add Trip</button>
+        <button class="btn-sidebar-ctrl" id="btn-add-group">+ New Group</button>
+      </div>
+    </div>
+    <div class="sidebar-body" id="sidebar-body">
+      <!-- groups rendered by JS -->
+    </div>
+    <div class="sidebar-footer">
+      <button class="btn-sidebar-reset" id="btn-reset-app">⚠ Reset RoamKit</button>
+    </div>
+  </aside>
+
+  <!-- Collapsed sidebar tab (desktop) -->
+  <button class="sidebar-revive-tab" id="btn-revive-sidebar" title="Open sidebar">☰ RoamKit</button>
+
+  <div class="app-body" id="app-body">
+    <div class="mobile-topbar">
+      <button id="btn-open-sidebar" class="btn-icon">☰</button>
+      <span class="mobile-brand">✈ RoamKit</span>
+      <div class="mobile-topbar-actions">
+        <button class="btn-secondary btn-sm" id="btn-explore-dest-mobile">🔍 Explore</button>
+        <button class="btn-primary btn-sm" id="btn-new-trip-mobile">+ New Trip</button>
+      </div>
+    </div>
+    <div class="compact-app-bar" id="compact-app-bar" hidden>
+      <div class="compact-app-bar-left">
+        <span class="compact-app-icon">🗺️</span>
+        <span class="compact-app-desc">Plan your trips, saved locally in your browser.</span>
+      </div>
+      <div class="compact-app-bar-actions">
+        <button class="btn-secondary btn-sm" id="btn-explore-dest-compact">🔍 Explore</button>
+        <button class="btn-primary btn-sm" id="btn-new-trip-compact">+ New Trip</button>
+      </div>
+    </div>
+    <main id="main">
+      <div class="empty-main" id="empty-main">
+        <!-- Rendered by renderEmptyMain() in app.js -->
+      </div>
+      <div class="trip-detail" id="trip-detail" hidden></div>
+    </main>
+  </div>
+</div>
+
+<input type="file" id="file-import-single" accept=".json" hidden>
+<input type="file" id="file-import-all" accept=".json" hidden>
+<input type="file" id="file-import-section" accept=".json" hidden>
+
+<!-- Modal: Trip -->
+<div class="modal-overlay" id="modal-trip" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-trip-title">New Trip</h2>
+      <button class="btn-icon modal-close" data-modal="modal-trip">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Trip Name <span class="required">*</span></label>
+        <input type="text" id="f-trip-name" placeholder="e.g. Japan Spring 2026">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="f-trip-desc" rows="2" placeholder="A short description..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="date" id="f-trip-start">
+        </div>
+        <div class="form-group">
+          <label>End Date</label>
+          <input type="date" id="f-trip-end">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Group</label>
+        <select id="f-trip-group"></select>
+      </div>
+      <div class="form-group">
+        <label>Cover Color</label>
+        <div class="color-picker-row">
+          <input type="color" id="f-trip-color" value="#1a56db">
+          <input type="text" id="f-trip-color-hex" placeholder="#1a56db" maxlength="7" class="color-hex-input">
+          <span id="color-presets"></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-trip">Cancel</button>
+      <button class="btn-primary" id="btn-save-trip">Save Trip</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Destination -->
+<div class="modal-overlay" id="modal-dest" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-dest-title">Add Destination</h2>
+      <button class="btn-icon modal-close" data-modal="modal-dest">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>City / Place</label>
+          <input type="text" id="f-dest-name" placeholder="e.g. Tokyo">
+        </div>
+        <div class="form-group">
+          <label>Country</label>
+          <input type="text" id="f-dest-country" placeholder="e.g. Japan">
+        </div>
+      </div>
+      <p class="form-hint-block">At least one of City/Place or Country is required.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Arrival Date</label>
+          <input type="date" id="f-dest-start">
+        </div>
+        <div class="form-group">
+          <label>Departure Date</label>
+          <input type="date" id="f-dest-end">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="f-dest-notes" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-dest">Cancel</button>
+      <button class="btn-primary" id="btn-save-dest">Save Destination</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Section -->
+<div class="modal-overlay" id="modal-section" hidden>
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>Add Section</h2>
+      <button class="btn-icon modal-close" data-modal="modal-section">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint">Choose a section type:</p>
+      <div class="section-type-grid" id="section-type-grid"></div>
+      <div id="section-customize-group" hidden>
+        <div class="section-customize-divider">Customize <span id="section-customize-label">this section</span></div>
+        <div class="form-row section-customize-row">
+          <div class="form-group section-icon-group">
+            <label>Icon <span class="form-hint-small">(optional)</span></label>
+            <input type="text" id="f-section-icon" placeholder="" maxlength="4" class="section-icon-input">
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>Title <span id="f-section-title-req" class="required" hidden>*</span></label>
+            <input type="text" id="f-section-title" placeholder="">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-section">Cancel</button>
+      <button class="btn-primary" id="btn-save-section">Add Section</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Parent Section -->
+<div class="modal-overlay" id="modal-parent-section" hidden>
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Add Parent Section</h2>
+      <button class="btn-icon modal-close" data-modal="modal-parent-section">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Section Group Name <span class="required">*</span></label>
+        <input type="text" id="f-parent-section-name" placeholder="e.g. Day 1, Outbound Journey...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-parent-section">Cancel</button>
+      <button class="btn-primary" id="btn-save-parent-section">Add Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Field -->
+<div class="modal-overlay" id="modal-field" hidden>
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Add Field</h2>
+      <button class="btn-icon modal-close" data-modal="modal-field">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Field Label <span class="required">*</span></label>
+        <input type="text" id="f-field-label" placeholder="e.g. Confirmation #, Address...">
+      </div>
+      <div class="form-group">
+        <label>Field Type</label>
+        <select id="f-field-type">
+          <option value="text">Text</option>
+          <option value="date">Date</option>
+          <option value="time">Time</option>
+          <option value="datetime-local">Date &amp; Time</option>
+          <option value="number">Number</option>
+          <option value="url">URL / Link</option>
+          <option value="textarea">Long Text</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-field">Cancel</button>
+      <button class="btn-primary" id="btn-save-field">Add Field</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Group -->
+<div class="modal-overlay" id="modal-group" hidden>
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 id="modal-group-title">New Group</h2>
+      <button class="btn-icon modal-close" data-modal="modal-group">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Group Name <span class="required">*</span></label>
+        <input type="text" id="f-group-name" placeholder="e.g. Work Trips, Family Vacations...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-group">Cancel</button>
+      <button class="btn-primary" id="btn-save-group">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Move Trip -->
+<div class="modal-overlay" id="modal-move-trip" hidden>
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Move Trip To...</h2>
+      <button class="btn-icon modal-close" data-modal="modal-move-trip">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="move-trip-group-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-move-trip">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Import Choice -->
+<div class="modal-overlay" id="modal-import-choice" hidden>
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Import All Trips</h2>
+      <button class="btn-icon modal-close" data-modal="modal-import-choice">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>How would you like to import?</p>
+      <div class="import-choice-options">
+        <div class="import-choice-card" id="import-choice-replace">
+          <strong>Replace All</strong>
+          <p>Overwrites all current trips and groups with the imported data.</p>
+        </div>
+        <div class="import-choice-card" id="import-choice-merge">
+          <strong>Merge</strong>
+          <p>Adds imported trips alongside your existing trips.</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-import-choice">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Explore Destination -->
+<div class="modal-overlay" id="modal-explore-dest" hidden>
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>🔍 Explore a Destination</h2>
+      <button class="btn-icon modal-close" data-modal="modal-explore-dest">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>City / Place</label>
+          <input type="text" id="f-explore-city" placeholder="e.g. Tokyo">
+        </div>
+        <div class="form-group">
+          <label>Country</label>
+          <input type="text" id="f-explore-country" placeholder="e.g. Japan">
+        </div>
+      </div>
+      <div id="explore-links-area" hidden>
+        <p class="modal-hint" style="margin-bottom:.5rem">Showing resources for: <strong id="explore-dest-label"></strong></p>
+        <div class="dest-links-grid" id="explore-links-grid"></div>
+      </div>
+      <p class="modal-hint" id="explore-hint">Enter a city or place above, then click Search.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-explore-dest">Close</button>
+      <button class="btn-primary" id="btn-explore-search">🔍 Search</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Help -->
+<div class="modal-overlay" id="modal-help" hidden>
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>How to Use RoamKit</h2>
+      <button class="btn-icon modal-close" data-modal="modal-help">✕</button>
+    </div>
+    <div class="modal-body help-body">
+
+      <div class="help-section">
+        <h3>✈ Trips</h3>
+        <ul>
+          <li>Click <strong>+ Add Trip</strong> in the sidebar to create a trip — give it a name, dates, and a color.</li>
+          <li>Click a trip to open it. Drag the <strong>⠿</strong> handle to reorder trips or move them between groups.</li>
+          <li>Hover a trip and click <strong>⋮</strong> to move, duplicate, export, or delete it.</li>
+          <li>Deleted trips land in <strong>Recently Deleted</strong> at the bottom of the sidebar — restore them anytime.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>📋 Sections &amp; Entries</h3>
+        <ul>
+          <li>Use <strong>+ Add Section</strong> in the trip header to add sections. You can select multiple types at once — flights, lodging, activities, and more — all added in one go.</li>
+          <li>Each section type comes pre-built with relevant fields. Click <strong>+ Add Entry</strong> to add a record.</li>
+          <li>Rename entries by clicking their title. Rename field labels by clicking them inline. Use <strong>+ Field</strong> to add custom fields.</li>
+          <li>Hover a section header to <strong>rename</strong> it (icon + title), <strong>export</strong> it, <strong>import</strong> data into it, or <strong>delete</strong> it.</li>
+          <li>Use <strong>+ Add Group</strong> to nest sections inside a group — handy for day-by-day itineraries.</li>
+          <li>Drag <strong>⠿</strong> to reorder sections or entries.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>📤 Sharing</h3>
+        <ul>
+          <li>Every trip, section, and entry has a <strong>Share</strong> button that produces clean, formatted text you can copy and paste anywhere — email, texts, notes, wherever.</li>
+          <li>Sharing never uploads anything — it just formats your data for the clipboard.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>📍 Destinations</h3>
+        <ul>
+          <li>Add a <strong>Destinations</strong> section to track the places you're visiting. Each one stores city, country, dates, and notes.</li>
+          <li>Expand <strong>Destination Resources</strong> on any destination for instant search links: Google, Maps, TripAdvisor, Viator, GetYourGuide, Yelp, Airbnb, and Hotels.</li>
+          <li>Use <strong>🔍 Explore</strong> in the top bar (or welcome screen) to look up any place without needing to open a trip first.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>↓ Export &amp; Import</h3>
+        <ul>
+          <li><strong>Sidebar</strong> — Export Trips / Import Trips backs up or restores your entire workspace. Import lets you choose Replace or Merge.</li>
+          <li><strong>Trip header</strong> — export or import a single trip as a <code>.json</code> file.</li>
+          <li><strong>Section header</strong> — export a section, or import a saved section file directly into it.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>⚙ Data &amp; Privacy</h3>
+        <ul>
+          <li>All data lives in your browser — nothing is sent to any server.</li>
+          <li>Use <strong>⚠ Reset RoamKit</strong> at the bottom of the sidebar to wipe everything and start over (double confirmation required).</li>
+        </ul>
+      </div>
+
+      <div class="help-section help-section-footer">
+        <h3>⌨ Open Source</h3>
+        <p>RoamKit is open source — fork it, self-host it, or build your own version.</p>
+        <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="btn-github">View on GitHub →</a>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" data-modal="modal-help">Got it!</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Share -->
+<div class="modal-overlay" id="modal-share" hidden>
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2 id="modal-share-title">Share</h2>
+      <button class="btn-icon modal-close" data-modal="modal-share">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint" id="modal-share-hint">Copy the text below to share:</p>
+      <textarea id="share-text-area" class="share-textarea" rows="14" readonly></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-share">Close</button>
+      <button class="btn-primary" id="btn-copy-share">Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
