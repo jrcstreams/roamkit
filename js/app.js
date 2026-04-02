@@ -821,18 +821,24 @@ function renderEmptyMain() {
     <div class="empty-main-cards">
       <button class="empty-action-card" id="btn-new-trip-empty">
         <span class="empty-card-icon">✈️</span>
-        <strong>Create a Trip</strong>
-        <span class="empty-card-desc">Build a full itinerary with flights, lodging, activities, budget, and more.</span>
+        <span class="empty-card-text">
+          <strong>Create a Trip</strong>
+          <span class="empty-card-desc">Build a full itinerary with flights, lodging, activities, budget, and more.</span>
+        </span>
       </button>
       <button class="empty-action-card" id="btn-explore-dest-empty">
         <span class="empty-card-icon">🔍</span>
-        <strong>Explore a Destination</strong>
-        <span class="empty-card-desc">Instantly search any city or country for maps, hotels, tours, and activities.</span>
+        <span class="empty-card-text">
+          <strong>Explore a Destination</strong>
+          <span class="empty-card-desc">Instantly search any city or country for maps, hotels, tours, and activities.</span>
+        </span>
       </button>
       <button class="empty-action-card" id="btn-import-trip-empty">
         <span class="empty-card-icon">📂</span>
-        <strong>Import a Trip</strong>
-        <span class="empty-card-desc">Load a previously exported RoamKit JSON file and pick up right where you left off.</span>
+        <span class="empty-card-text">
+          <strong>Import a Trip</strong>
+          <span class="empty-card-desc">Load a previously exported RoamKit JSON file and pick up right where you left off.</span>
+        </span>
       </button>
     </div>
   `;
