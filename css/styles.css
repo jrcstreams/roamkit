@@ -37,6 +37,7 @@ body {
   line-height: 1.55;
   overflow: hidden;
   height: 100vh;
+  height: 100dvh; /* mobile: tracks actual visible area as browser chrome shows/hides */
   letter-spacing: .01em;
 }
 
@@ -44,6 +45,7 @@ body {
 .app {
   display: flex;
   height: 100vh;
+  height: 100dvh; /* mobile: prevents topbar from being pushed off-screen */
   overflow: hidden;
   position: relative;
 }
