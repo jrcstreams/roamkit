@@ -2036,8 +2036,8 @@ textarea { resize: vertical; }
   .empty-main-logo { height: 56px; }
   .empty-main h2 { font-size: 1.4rem; }
   .empty-main-promo { font-size: .88rem; }
-  .empty-main-badges { gap: .4rem; margin-top: .35rem; }
-  .empty-badge { font-size: .73rem; padding: .2rem .6rem; }
+  .empty-main-badges { flex-wrap: nowrap; gap: clamp(.18rem, .8vw, .4rem); margin-top: .35rem; }
+  .empty-badge { font-size: clamp(.52rem, 2.2vw, .73rem); padding: .12rem clamp(.28rem, 1vw, .6rem); }
   .empty-main-divider { margin-bottom: 1.1rem; }
 
   /* Cards: horizontal list on mobile */
