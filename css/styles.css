@@ -1903,6 +1903,23 @@ textarea { resize: vertical; }
   color: var(--text-muted);
   margin-bottom: .65rem;
 }
+.help-section-contact {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .85rem 1rem;
+  margin-top: .25rem;
+  margin-bottom: 0;
+}
+.help-section-contact h3 {
+  border-bottom: none;
+  margin-bottom: .35rem;
+}
+.help-section-contact p {
+  font-size: .83rem;
+  color: var(--text-muted);
+  margin-bottom: .65rem;
+}
 .help-section h3 {
   font-size: .95rem;
   font-weight: 700;
