@@ -7,6 +7,12 @@ const ICON_DN = `<svg class="si" viewBox="0 0 10 11" fill="none" stroke="current
 const ICON_UP = `<svg class="si" viewBox="0 0 10 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="7.5" x2="5" y2="1"/><polyline points="2,3.5 5,1 8,3.5"/><line x1="1" y1="10.5" x2="9" y2="10.5"/></svg>`;
 const ICON_SHARE = `<svg class="si" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="2" r="1.5"/><circle cx="8.5" cy="9" r="1.5"/><circle cx="2" cy="5.5" r="1.5"/><line x1="3.5" y1="6.3" x2="7" y2="8.3"/><line x1="7" y1="2.7" x2="3.5" y2="4.7"/></svg>`;
 
+// Trip control panel SVG icons
+const ICON_CTRL_EXPAND   = `<svg class="ci" viewBox="0 0 10 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,5 5,2 8,5"/><polyline points="2,7 5,10 8,7"/></svg>`;
+const ICON_CTRL_COLLAPSE = `<svg class="ci" viewBox="0 0 10 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,3 5,5.5 8,3"/><polyline points="2,9 5,6.5 8,9"/></svg>`;
+const ICON_CTRL_RETURN   = `<svg class="ci" viewBox="0 0 13 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2,4.5 H8.5 Q12,4.5 12,7.5 Q12,10.5 8.5,10.5 H4.5" transform="translate(0,-1)"/><polyline points="4,2 2,4.5 4,7" transform="translate(0,-0.5)"/></svg>`;
+const ICON_CTRL_CLOSE    = `<svg class="ci" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="8.5" y2="8.5"/><line x1="8.5" y1="1.5" x2="1.5" y2="8.5"/></svg>`;
+
 const COLOR_PRESETS = [
   '#1a56db', '#0e9f6e', '#d97706', '#e02424',
   '#7e3af2', '#0891b2', '#db2777', '#374151'
@@ -929,23 +935,19 @@ function renderTripDetail() {
 
   // Control panel row
   html += `<div class="trip-control-panel">`;
-  html += `<div class="trip-ctrl-group">`;
-  html += `<button class="trip-ctrl-btn trip-ctrl-btn-primary" id="btn-add-section">+ Add Section</button>`;
-  html += `<button class="trip-ctrl-btn" id="btn-add-parent-section">+ Add Group</button>`;
-  html += `</div>`;
+  html += `<button class="trip-ctrl-btn trip-ctrl-primary" id="btn-add-section">+ Add Section</button>`;
+  html += `<button class="trip-ctrl-btn trip-ctrl-ghost" id="btn-add-parent-section">+ Group</button>`;
   const hasExpandable = outboundSections.length > 1 || outboundSections.some(s => s.type === 'parent');
   if (hasExpandable) {
-    html += `<div class="trip-ctrl-group">`;
-    html += `<button class="trip-ctrl-btn trip-ctrl-btn-ghost" id="btn-expand-all">↕ Expand All</button>`;
-    html += `<button class="trip-ctrl-btn trip-ctrl-btn-ghost" id="btn-collapse-all">↕ Collapse All</button>`;
-    html += `</div>`;
+    html += `<span class="trip-ctrl-sep" aria-hidden="true"></span>`;
+    html += `<button class="trip-ctrl-btn trip-ctrl-ghost trip-ctrl-icon-btn" id="btn-expand-all" title="Expand all sections">${ICON_CTRL_EXPAND}<span class="ctrl-lbl">Expand</span></button>`;
+    html += `<button class="trip-ctrl-btn trip-ctrl-ghost trip-ctrl-icon-btn" id="btn-collapse-all" title="Collapse all sections">${ICON_CTRL_COLLAPSE}<span class="ctrl-lbl">Collapse</span></button>`;
   }
-  html += `<div class="trip-ctrl-group trip-ctrl-group-right">`;
+  html += `<span class="trip-ctrl-fill"></span>`;
   if (!trip.hasReturnTrip) {
-    html += `<button class="trip-ctrl-btn trip-ctrl-btn-return" id="btn-add-return">↩ Add Return Trip</button>`;
+    html += `<button class="trip-ctrl-btn trip-ctrl-return trip-ctrl-icon-btn" id="btn-add-return">${ICON_CTRL_RETURN}<span class="ctrl-lbl">Return Trip</span></button>`;
   }
-  html += `<button class="trip-ctrl-btn trip-ctrl-btn-close" id="btn-close-trip">✕ Close Trip</button>`;
-  html += `</div>`;
+  html += `<button class="trip-ctrl-btn trip-ctrl-close trip-ctrl-icon-btn" id="btn-close-trip" title="Close trip">${ICON_CTRL_CLOSE}</button>`;
   html += `</div>`; // trip-control-panel
 
   html += `</div>`; // trip-header-inner
