@@ -1082,7 +1082,6 @@ function renderSectionHTML(section, tripId, _isReturn) {
     html += `<div class="item-list" data-items-container="${section.id}"></div>`;
   }
   html += `<button class="btn-ghost" data-add-entry="${section.id}" data-entry-trip="${tripId}">+ Add Entry</button>`;
-  html += `<button class="btn-ghost" data-import-entry="${section.id}" data-entry-trip="${tripId}" title="Import an entry from a .json file">${ICON_UP} Import Entry</button>`;
   html += `</div>`; // section-body
 
   html += `</div>`; // content-section
@@ -1184,6 +1183,7 @@ function renderItemHTML(item, sectionId, tripId, idx) {
   html += `<div class="item-card-actions">`;
   html += `<button class="btn-icon btn-sm" data-add-field="${item.id}" data-field-section="${sectionId}" data-field-trip="${tripId}" title="Add field">+ Field</button>`;
   html += `<button class="btn-icon btn-sm" data-export-item="${item.id}" data-item-section="${sectionId}" data-item-trip="${tripId}" title="Export entry">${ICON_DN}</button>`;
+  html += `<button class="btn-icon btn-sm" data-import-entry="${sectionId}" data-entry-trip="${tripId}" title="Import entry from file">${ICON_UP}</button>`;
   html += `<button class="btn-icon btn-sm" data-share-item="${item.id}" data-share-section="${sectionId}" data-share-trip="${tripId}" title="Share entry">${ICON_SHARE}</button>`;
   html += `<button class="btn-icon btn-sm danger" data-delete-item="${item.id}" data-item-section="${sectionId}" data-item-trip="${tripId}" title="Delete entry">🗑</button>`;
   html += `</div>`;

@@ -106,12 +106,13 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  height: 48px;
+  height: 56px;
+  box-sizing: border-box;
   background: var(--sidebar-bg);
   color: #d1d5db;
   border: none;
   border-right: 1px solid rgba(255,255,255,.1);
-  border-bottom: 1px solid rgba(255,255,255,.1);
+  border-bottom: 1px solid rgba(255,255,255,.08);
   border-radius: 0 0 var(--radius-sm) 0;
   padding: 0 1rem;
   font-size: .82rem;
@@ -145,7 +146,7 @@ body {
 .app-brand {
   display: flex;
   align-items: center;
-  gap: .4rem;
+  gap: .75rem;
 }
 .brand-logo {
   height: 28px;
@@ -539,6 +540,14 @@ body {
   height: 26px;
   width: auto;
   display: block;
+  flex-shrink: 0;
+}
+.mobile-brand-name {
+  font-size: .92rem;
+  font-weight: 700;
+  color: #f9fafb;
+  letter-spacing: .03em;
+  white-space: nowrap;
 }
 .mobile-brand {
   font-size: .95rem;
@@ -738,24 +747,41 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .5rem;
+  gap: .55rem;
   width: 190px;
-  padding: 1.5rem 1.25rem;
-  background: var(--card-bg);
+  padding: 1.5rem 1.25rem 1.35rem;
+  background: var(--bg-card);
   border: 1px solid var(--border);
+  border-top: 3px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: border-color .15s, box-shadow .15s, transform .1s;
+  transition: border-color .18s, box-shadow .18s, transform .12s, background .18s;
   text-align: center;
   color: var(--text);
+  position: relative;
 }
 .empty-action-card:hover {
   border-color: var(--primary);
-  box-shadow: 0 4px 16px rgba(26,86,219,.1);
-  transform: translateY(-2px);
+  border-top-color: var(--primary);
+  box-shadow: 0 6px 24px rgba(26,86,219,.13);
+  transform: translateY(-3px);
+  background: var(--bg-card);
 }
-.empty-action-card:active { transform: translateY(0); }
-.empty-card-icon { font-size: 1.75rem; line-height: 1; }
+.empty-action-card:active { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(26,86,219,.08); }
+.empty-card-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-light);
+  border-radius: 12px;
+  margin-bottom: .1rem;
+  transition: background .18s;
+}
+.empty-action-card:hover .empty-card-icon { background: rgba(26,86,219,.18); }
 .empty-action-card strong { font-size: .9rem; font-weight: 700; color: var(--text); }
 .empty-card-desc { font-size: .78rem; color: var(--text-muted); line-height: 1.5; }
 
