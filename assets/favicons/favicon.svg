@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="17" x2="0" y2="492" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#327EEE"/>
+      <stop offset="1" stop-color="#0750D0"/>
+    </linearGradient>
+    <clipPath id="clip"><rect x="6" y="17" width="502" height="475" rx="87" ry="87"/></clipPath>
+  </defs>
+  <rect x="6" y="17" width="502" height="475" rx="87" ry="87" fill="url(#bg)"/>
+  <g clip-path="url(#clip)">
+    <rect x="323.60" y="253.65" width="40.31" height="21.21" rx="10.61" transform="rotate(-45.000 343.75 264.25)" fill="#fff"/><rect x="276.91" y="283.27" width="40.11" height="22.28" rx="11.14" transform="rotate(-21.801 296.97 294.41)" fill="#fff"/><rect x="222.00" y="290.00" width="39.00" height="22.00" rx="11.00" transform="rotate(0.000 241.50 301.00)" fill="#fff"/><rect x="164.90" y="287.77" width="40.38" height="22.36" rx="11.18" transform="rotate(-5.194 185.09 298.95)" fill="#fff"/><rect x="109.94" y="303.03" width="40.72" height="22.07" rx="11.04" transform="rotate(-24.228 130.30 314.06)" fill="#fff"/><rect x="61.65" y="335.03" width="41.77" height="22.01" rx="11.01" transform="rotate(-41.186 82.53 346.04)" fill="#fff"/><rect x="23.11" y="379.21" width="42.71" height="22.19" rx="11.10" transform="rotate(-56.310 44.46 390.31)" fill="#fff"/>
+    <path d="M 376,79  L375,80  L368,80  L367,81  L361,82  L360,83  L358,83  L357,84  L355,84  L351,86  L349,88  L342,92  L333,101  L333,102  L328,108  L328,110  L326,112  L324,116  L324,118  L322,121  L322,124  L320,128  L320,151  L322,155  L322,159  L324,162  L324,165  L326,167  L326,169  L332,180  L332,182  L334,184  L338,192  L342,197  L343,200  L345,202  L349,209  L352,212  L353,215  L355,216  L355,217  L358,220  L358,221  L361,224  L361,225  L367,232  L367,233  L373,239  L373,240  L377,244  L377,245  L380,248  L382,248  L396,232  L396,231  L399,228  L399,227  L403,223  L403,222  L409,215  L409,214  L423,194  L424,191  L426,189  L426,187  L430,182  L430,180  L432,178  L432,176  L434,173  L434,171  L438,164  L438,161  L440,158  L440,155  L441,154  L441,151  L442,150  L442,128  L440,124  L440,121  L438,118  L438,115  L436,113  L434,108  L432,106  L430,102  L420,92  L419,92  L416,89  L413,88  L411,86  L407,84  L405,84  L404,83  L402,83  L401,82  L399,82  L395,80  L387,80  L386,79 Z" fill="#67EE70"/>
+    <circle cx="381" cy="139.5" r="24" fill="url(#bg)"/>
+  </g>
+</svg>

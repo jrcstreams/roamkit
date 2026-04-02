@@ -807,18 +807,41 @@ function renderEmptyMain() {
   // Always show the full welcome screen when no trip is open
   el.className = 'empty-main';
   el.innerHTML = `
-    <div style="font-size:3rem">🗺️</div>
-    <h2>Welcome to RoamKit</h2>
-    <p>Select a trip from the sidebar or create a new one to start planning.</p>
-    <div class="empty-main-actions">
-      <button class="btn-primary" id="btn-new-trip-empty">+ Create New Trip</button>
-      <button class="btn-secondary" id="btn-explore-dest-empty">🔍 Explore a Destination</button>
+    <div class="empty-main-hero">
+      <img src="assets/logo/roamkit-logo.png" alt="RoamKit" class="empty-main-logo">
+      <h2>Welcome to RoamKit</h2>
+      <p class="empty-main-promo">A lightweight, local-first travel planner that lets you build, organize, and share complete itineraries — without accounts, cloud lock-in, or complexity.</p>
+      <div class="empty-main-badges">
+        <span class="empty-badge">✓ No account needed</span>
+        <span class="empty-badge">✓ All data stays local</span>
+        <span class="empty-badge">✓ Free &amp; open source</span>
+      </div>
+    </div>
+    <div class="empty-main-divider"><span>Get started</span></div>
+    <div class="empty-main-cards">
+      <button class="empty-action-card" id="btn-new-trip-empty">
+        <span class="empty-card-icon">✈️</span>
+        <strong>Create a Trip</strong>
+        <span class="empty-card-desc">Build a full itinerary with flights, lodging, activities, budget, and more.</span>
+      </button>
+      <button class="empty-action-card" id="btn-explore-dest-empty">
+        <span class="empty-card-icon">🔍</span>
+        <strong>Explore a Destination</strong>
+        <span class="empty-card-desc">Instantly search any city or country for maps, hotels, tours, and activities.</span>
+      </button>
+      <button class="empty-action-card" id="btn-import-trip-empty">
+        <span class="empty-card-icon">📂</span>
+        <strong>Import a Trip</strong>
+        <span class="empty-card-desc">Load a previously exported RoamKit JSON file and pick up right where you left off.</span>
+      </button>
     </div>
   `;
   const btnNew = document.getElementById('btn-new-trip-empty');
   if (btnNew) btnNew.addEventListener('click', () => openNewTrip('default'));
   const btnExplore = document.getElementById('btn-explore-dest-empty');
   if (btnExplore) btnExplore.addEventListener('click', openExploreDestModal);
+  const btnImport = document.getElementById('btn-import-trip-empty');
+  if (btnImport) btnImport.addEventListener('click', () => document.getElementById('file-import-single').click());
 }
 
 function updateCompactAppBar() {
@@ -1059,6 +1082,7 @@ function renderSectionHTML(section, tripId, _isReturn) {
     html += `<div class="item-list" data-items-container="${section.id}"></div>`;
   }
   html += `<button class="btn-ghost" data-add-entry="${section.id}" data-entry-trip="${tripId}">+ Add Entry</button>`;
+  html += `<button class="btn-ghost" data-import-entry="${section.id}" data-entry-trip="${tripId}" title="Import an entry from a .json file">${ICON_UP} Import Entry</button>`;
   html += `</div>`; // section-body
 
   html += `</div>`; // content-section
@@ -1159,6 +1183,7 @@ function renderItemHTML(item, sectionId, tripId, idx) {
   html += `<span class="item-card-title" contenteditable="true" data-item-title="${item.id}" data-item-section="${sectionId}" data-item-trip="${tripId}" title="Click to rename">${esc(displayTitle)}</span>`;
   html += `<div class="item-card-actions">`;
   html += `<button class="btn-icon btn-sm" data-add-field="${item.id}" data-field-section="${sectionId}" data-field-trip="${tripId}" title="Add field">+ Field</button>`;
+  html += `<button class="btn-icon btn-sm" data-export-item="${item.id}" data-item-section="${sectionId}" data-item-trip="${tripId}" title="Export entry">${ICON_DN}</button>`;
   html += `<button class="btn-icon btn-sm" data-share-item="${item.id}" data-share-section="${sectionId}" data-share-trip="${tripId}" title="Share entry">${ICON_SHARE}</button>`;
   html += `<button class="btn-icon btn-sm danger" data-delete-item="${item.id}" data-item-section="${sectionId}" data-item-trip="${tripId}" title="Delete entry">🗑</button>`;
   html += `</div>`;
@@ -1535,6 +1560,22 @@ function attachSectionEvents(trip) {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       exportSection(btn.dataset.exportTrip, btn.dataset.exportSection);
+    });
+  });
+
+  // Export entry
+  content.querySelectorAll('[data-export-item]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      exportEntry(btn.dataset.itemTrip, btn.dataset.itemSection, btn.dataset.exportItem);
+    });
+  });
+
+  // Import entry (reuses file-import-section, ctx.targetSectionId set so handler knows it's an entry target)
+  content.querySelectorAll('[data-import-entry]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openImportSection(btn.dataset.entryTrip, false, null, btn.dataset.importEntry);
     });
   });
 
@@ -2580,13 +2621,100 @@ function executeMoveTrip(tripId, newGroupId) {
   renderSidebar();
 }
 
+// ===== Schema Normalization (future-proof import) =====
+
+const SCHEMA_VERSION = 2;
+const VALID_FIELD_TYPES = ['text','date','time','number','url','email','tel','textarea'];
+
+function normalizeField(f = {}) {
+  return {
+    id: f.id || uid(),
+    label: f.label != null ? String(f.label) : 'Field',
+    value: f.value != null ? String(f.value) : '',
+    type: VALID_FIELD_TYPES.includes(f.type) ? f.type : 'text'
+  };
+}
+
+function normalizeItem(item = {}) {
+  return {
+    id: item.id || uid(),
+    title: item.title || '',
+    fields: Array.isArray(item.fields) ? item.fields.map(normalizeField) : []
+  };
+}
+
+function normalizeSection(sec = {}) {
+  const base = {
+    id: sec.id || uid(),
+    type: sec.type || 'custom',
+    title: sec.title || 'Section',
+    icon: sec.icon || '📋',
+    isReturn: Boolean(sec.isReturn),
+    collapsed: Boolean(sec.collapsed),
+    expanded: sec.expanded !== false
+  };
+  if (sec.type === 'parent') {
+    return { ...base, children: Array.isArray(sec.children) ? sec.children.map(normalizeSection) : [] };
+  }
+  return { ...base, items: Array.isArray(sec.items) ? sec.items.map(normalizeItem) : [] };
+}
+
+function normalizeDestination(d = {}) {
+  return {
+    id: d.id || uid(),
+    name: d.name || '',
+    country: d.country || '',
+    startDate: d.startDate || '',
+    endDate: d.endDate || '',
+    notes: d.notes || ''
+  };
+}
+
+function normalizeTrip(trip = {}) {
+  return {
+    id: trip.id || uid(),
+    name: trip.name || 'Untitled Trip',
+    description: trip.description || '',
+    startDate: trip.startDate || '',
+    endDate: trip.endDate || '',
+    color: trip.color || '#1a56db',
+    hasReturnTrip: Boolean(trip.hasReturnTrip),
+    groupId: trip.groupId || 'default',
+    order: typeof trip.order === 'number' ? trip.order : 0,
+    createdAt: trip.createdAt || new Date().toISOString(),
+    updatedAt: trip.updatedAt || new Date().toISOString(),
+    destinations: Array.isArray(trip.destinations) ? trip.destinations.map(normalizeDestination) : [],
+    sections: Array.isArray(trip.sections) ? trip.sections.map(normalizeSection) : [],
+    returnSections: Array.isArray(trip.returnSections) ? trip.returnSections.map(normalizeSection) : []
+  };
+}
+
 // ===== Export / Import =====
 
 function exportSingleTrip(tripId) {
   const trip = getTrip(tripId);
   if (!trip) return;
-  const data = { version: 2, exported: new Date().toISOString(), trip };
+  const data = { schemaVersion: SCHEMA_VERSION, type: 'roamkit_trip', exported: new Date().toISOString(), trip };
   downloadJSON(data, `roamkit_trip_${trip.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`);
+}
+
+function exportEntry(tripId, sectionId, itemId) {
+  const trip = getTrip(tripId);
+  if (!trip) return;
+  const sec = getSection(trip, sectionId);
+  if (!sec) return;
+  const item = (sec.items || []).find(i => i.id === itemId);
+  if (!item) return;
+  const safeName = (item.title || 'entry').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  const data = {
+    schemaVersion: SCHEMA_VERSION,
+    type: 'roamkit_entry',
+    exported: new Date().toISOString(),
+    sectionType: sec.type,
+    sectionTitle: sec.title,
+    entry: JSON.parse(JSON.stringify(item))
+  };
+  downloadJSON(data, `roamkit_entry_${safeName}.json`);
 }
 
 function exportSection(tripId, sectionId) {
@@ -2598,7 +2726,7 @@ function exportSection(tripId, sectionId) {
   const exportType = isGroup ? 'roamkit_section_group' : 'roamkit_section';
   const sectionCopy = JSON.parse(JSON.stringify(sec));
   const data = {
-    version: 2,
+    schemaVersion: SCHEMA_VERSION,
     type: exportType,
     exported: new Date().toISOString(),
     section: sectionCopy
@@ -2610,10 +2738,12 @@ function exportSection(tripId, sectionId) {
 function exportAll() {
   const today = new Date().toISOString().slice(0, 10);
   const data = {
-    version: 2,
+    schemaVersion: SCHEMA_VERSION,
+    type: 'roamkit_backup',
     exported: new Date().toISOString(),
     groups: state.groups,
-    trips: state.trips
+    trips: state.trips,
+    deletedTrips: state.deletedTrips || []
   };
   downloadJSON(data, `roamkit_backup_${today}.json`);
 }
@@ -2635,25 +2765,47 @@ function handleImportSection(file) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      const validTypes = ['roamkit_section', 'roamkit_section_group'];
-      if (!data.section || !validTypes.includes(data.type)) {
-        alert('Invalid section file. Please export a section or group from RoamKit first.');
-        return;
-      }
       const ctx = state.importSectionContext;
       if (!ctx) return;
       const trip = getTrip(ctx.tripId);
       if (!trip) return;
 
-      function remapIds(sec) {
-        const s = JSON.parse(JSON.stringify(sec));
+      // ── Entry file: add a single entry to a section ──────────────────────
+      if (data.type === 'roamkit_entry') {
+        if (!data.entry) { alert('Invalid entry file.'); return; }
+        const targetId = ctx.targetSectionId;
+        if (!targetId) { alert('Please use the import button on a section (not a group) to import entries.'); return; }
+        const targetSec = getSection(trip, targetId);
+        if (!targetSec) { alert('Target section not found.'); return; }
+        const item = normalizeItem(data.entry);
+        item.id = uid();
+        (item.fields || []).forEach(f => { f.id = uid(); });
+        targetSec.items = (targetSec.items || []).concat([item]);
+        state.currentTripId = ctx.tripId;
+        trip.updatedAt = new Date().toISOString();
+        save();
+        renderTripDetail();
+        return;
+      }
+
+      // ── Section / group file ──────────────────────────────────────────────
+      const validTypes = ['roamkit_section', 'roamkit_section_group'];
+      if (!data.section || !validTypes.includes(data.type)) {
+        alert('Invalid file. Please import a RoamKit section, group, or entry file.');
+        return;
+      }
+
+      // Normalize + remap all IDs to avoid collisions
+      function remapSection(sec) {
+        const s = normalizeSection(sec);
         s.id = uid();
         if (s.items) s.items = s.items.map(item => {
-          const i = { ...item, id: uid() };
-          i.fields = (item.fields || []).map(f => ({ ...f, id: uid() }));
+          const i = normalizeItem(item);
+          i.id = uid();
+          i.fields = i.fields.map(f => ({ ...f, id: uid() }));
           return i;
         });
-        if (s.children) s.children = s.children.map(remapIds);
+        if (s.children) s.children = s.children.map(remapSection);
         return s;
       }
 
@@ -2661,17 +2813,16 @@ function handleImportSection(file) {
         // Import entries INTO an existing section
         const targetSec = getSection(trip, ctx.targetSectionId);
         if (!targetSec) { alert('Target section not found.'); return; }
-        const importedSection = remapIds(data.section);
+        const importedSection = remapSection(data.section);
         const newItems = importedSection.items || [];
         if (importedSection.children) {
-          // Group: import children's items too
           importedSection.children.forEach(child => {
             (child.items || []).forEach(item => newItems.push(item));
           });
         }
         targetSec.items = (targetSec.items || []).concat(newItems);
       } else {
-        const importedSection = remapIds(data.section);
+        const importedSection = remapSection(data.section);
         importedSection.expanded = true;
         if (ctx.parentId) {
           const parentSec = getSection(trip, ctx.parentId);
@@ -2715,19 +2866,16 @@ function handleImportSingle(file) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      let trip = null;
-      if (data.trip) trip = data.trip;
-      else if (data.id && data.name) trip = data; // direct trip object
-      if (!trip) { alert('Invalid trip file.'); return; }
+      let raw = null;
+      if (data.trip) raw = data.trip;
+      else if (data.id && data.name) raw = data; // direct trip object
+      if (!raw) { alert('Invalid trip file.'); return; }
 
-      // Assign new id to avoid collision
-      trip.id = uid();
+      // Normalize fills defaults for any fields added/changed since this was exported
+      const trip = normalizeTrip(raw);
+      trip.id = uid(); // always assign new id to avoid collision
       trip.groupId = 'default';
       trip.order = tripsInGroup('default').length;
-      trip.sections = trip.sections || [];
-      trip.returnSections = trip.returnSections || [];
-      trip.destinations = trip.destinations || [];
-      trip.hasReturnTrip = trip.hasReturnTrip || false;
       state.trips.push(trip);
       state.currentTripId = trip.id;
       save();
@@ -2746,8 +2894,9 @@ function handleImportAll(file) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      if ((!data.trips && !data.groups) || data.version === undefined) {
-        // Try treating it as a single trip
+      // Accept any file that has trips/groups arrays (version field optional for forward-compat)
+      if (!data.trips && !data.groups) {
+        // Try treating it as a single trip or section
         handleImportSingle(file);
         return;
       }
@@ -2764,10 +2913,13 @@ function executeImport(data, mode) {
   const importGroups = data.groups || [makeDefaultGroup()];
   const importTrips = data.trips || [];
 
+  // Normalize all trips and sections to fill defaults for any model changes since export
+  const normalizedTrips = importTrips.map(t => normalizeTrip(t));
+
   if (mode === 'replace') {
     state.groups = importGroups;
-    state.trips = importTrips;
-    state.deletedTrips = data.deletedTrips || [];
+    state.trips = normalizedTrips;
+    state.deletedTrips = (data.deletedTrips || []).map(t => normalizeTrip(t));
     if (!state.groups.find(g => g.id === 'default')) {
       state.groups.unshift(makeDefaultGroup());
     }
@@ -2790,7 +2942,7 @@ function executeImport(data, mode) {
       }
     });
 
-    importTrips.forEach(t => {
+    normalizedTrips.forEach(t => {
       const newTripId = uid();
       const mappedGroupId = groupIdMap[t.groupId] || 'default';
       state.trips.push({
