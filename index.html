@@ -263,6 +263,30 @@
   </div>
 </div>
 
+<!-- Modal: Rename Section -->
+<div class="modal-overlay" id="modal-rename-section" hidden>
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Rename Section</h2>
+      <button class="btn-icon modal-close" data-modal="modal-rename-section">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Icon / Emoji</label>
+        <input type="text" id="f-rename-section-icon" placeholder="e.g. ✈️" maxlength="4">
+      </div>
+      <div class="form-group">
+        <label>Section Title <span class="required">*</span></label>
+        <input type="text" id="f-rename-section-title" placeholder="Section name...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="modal-rename-section">Cancel</button>
+      <button class="btn-primary" id="btn-save-rename-section">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Add Parent Section -->
 <div class="modal-overlay" id="modal-parent-section" hidden>
   <div class="modal modal-sm">

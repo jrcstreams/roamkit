@@ -317,6 +317,16 @@ function tripsInGroup(groupId) {
   return state.trips.filter(t => t.groupId === groupId).sort((a, b) => a.order - b.order);
 }
 
+// ===== Drag selection helpers =====
+function disableDragSelection() {
+  document.body.style.userSelect = 'none';
+  document.body.style.webkitUserSelect = 'none';
+}
+function enableDragSelection() {
+  document.body.style.userSelect = '';
+  document.body.style.webkitUserSelect = '';
+}
+
 // ===== createSortableV2 =====
 function createSortableV2(container, { handleSelector, itemAttr, onEnd }) {
   if (!container) return;
@@ -347,6 +357,7 @@ function createSortableV2(container, { handleSelector, itemAttr, onEnd }) {
     document.addEventListener('pointermove', move, { passive: false });
     document.addEventListener('pointerup', end);
     document.addEventListener('pointercancel', end);
+    disableDragSelection();
   }
 
   function move(e) {
@@ -408,6 +419,7 @@ function createSortableV2(container, { handleSelector, itemAttr, onEnd }) {
     document.removeEventListener('pointermove', move);
     document.removeEventListener('pointerup', end);
     document.removeEventListener('pointercancel', end);
+    enableDragSelection();
 
     if (ghost) { ghost.remove(); ghost = null; }
     if (dragEl) dragEl.classList.remove('drag-placeholder');
@@ -1463,83 +1475,43 @@ function attachSectionEvents(trip) {
     });
   });
 
-  // Rename section
+  // Rename section — opens modal
   content.querySelectorAll('[data-rename-section]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       const sectionId = btn.dataset.renameSection;
-      const titleEl = content.querySelector(`[data-section-title-text="${sectionId}"]`);
-      const iconEl = content.querySelector(`[data-section-icon="${sectionId}"]`);
-      if (!titleEl) return;
-
       const sec = getSection(trip, sectionId);
       if (!sec) return;
-
       const tmplForSec = SECTION_TEMPLATES[sec.type] || {};
       const currentIcon = sec.icon !== undefined ? sec.icon : (tmplForSec.icon || '');
 
-      // Build inline rename wrapper with icon + title inputs
-      const wrapper = document.createElement('span');
-      wrapper.className = 'section-rename-wrapper';
-
-      const iconInput = document.createElement('input');
-      iconInput.type = 'text';
-      iconInput.className = 'section-icon-rename-input';
+      const iconInput = document.getElementById('f-rename-section-icon');
+      const titleInput = document.getElementById('f-rename-section-title');
       iconInput.value = currentIcon;
       iconInput.placeholder = tmplForSec.icon || '✏️';
-      iconInput.maxLength = 4;
-      iconInput.title = 'Icon / Emoji';
-
-      const titleInput = document.createElement('input');
-      titleInput.type = 'text';
-      titleInput.className = 'section-rename-input';
       titleInput.value = sec.title;
 
-      wrapper.appendChild(iconInput);
-      wrapper.appendChild(titleInput);
-
-      // Replace title element; hide icon element
-      titleEl.replaceWith(wrapper);
-      if (iconEl) iconEl.style.display = 'none';
-
-      const headerEl = wrapper.closest('.content-section-header') || wrapper.closest('.parent-section-header');
-      if (headerEl) headerEl.classList.add('is-renaming');
-
-      titleInput.focus();
-      titleInput.select();
-
-      let saved = false;
-      const save_rename = () => {
-        if (saved) return;
-        // Check if focus moved to the other input in the wrapper
-        setTimeout(() => {
-          if (saved) return;
-          if (wrapper.contains(document.activeElement)) return; // focus still inside wrapper
-          saved = true;
-          const newTitle = titleInput.value.trim();
-          const newIcon = iconInput.value.trim();
-          if (newTitle) sec.title = newTitle;
-          sec.icon = newIcon;
-          save();
-          renderTripDetail();
-        }, 100);
-      };
-      titleInput.addEventListener('blur', save_rename);
-      iconInput.addEventListener('blur', save_rename);
-      titleInput.addEventListener('keydown', e2 => {
-        if (e2.key === 'Enter') { titleInput.blur(); }
-        if (e2.key === 'Escape') {
-          saved = true;
-          renderTripDetail();
-        }
+      // Wire save button (replace old listener by cloning)
+      const saveBtn = document.getElementById('btn-save-rename-section');
+      const newBtn = saveBtn.cloneNode(true);
+      saveBtn.parentNode.replaceChild(newBtn, saveBtn);
+      newBtn.addEventListener('click', () => {
+        const newTitle = titleInput.value.trim();
+        const newIcon = iconInput.value.trim();
+        if (!newTitle) return;
+        sec.title = newTitle;
+        sec.icon = newIcon;
+        save();
+        closeModal('modal-rename-section');
+        renderTripDetail();
       });
-      iconInput.addEventListener('keydown', e2 => {
-        if (e2.key === 'Enter') { titleInput.focus(); }
-        if (e2.key === 'Escape') {
-          saved = true;
-          renderTripDetail();
-        }
+
+      titleInput.addEventListener('keydown', function handler(e2) {
+        if (e2.key === 'Enter') { newBtn.click(); titleInput.removeEventListener('keydown', handler); }
       });
+
+      openModal('modal-rename-section');
+      setTimeout(() => titleInput.select(), 50);
     });
   });
 
@@ -1912,6 +1884,7 @@ function attachCrossContainerSectionDrag() {
     offsetX = e.clientX - rect.left;
     offsetY = e.clientY - rect.top;
 
+    disableDragSelection();
     document.addEventListener('pointermove', move, { passive: false });
     document.addEventListener('pointerup', end);
     document.addEventListener('pointercancel', end);
@@ -1960,6 +1933,7 @@ function attachCrossContainerSectionDrag() {
     document.removeEventListener('pointerup', end);
     document.removeEventListener('pointercancel', end);
     document.body.classList.remove('is-section-dragging');
+    enableDragSelection();
 
     if (ghost) { ghost.remove(); ghost = null; }
     if (dragEl) dragEl.classList.remove('drag-placeholder');
@@ -2359,7 +2333,7 @@ function openAddSection(tripId, isReturn, parentId) {
       } else {
         saveBtn.textContent = count === 1 ? 'Add 1 Section' : `Add ${count} Sections`;
       }
-      // Show customize group only when custom is selected OR exactly 1 non-custom selected
+      // Show customize group only when custom is selected
       if (state.selectedSectionTypes.has('custom')) {
         customizeGroup.hidden = false;
         if (count === 1) {
@@ -2374,19 +2348,8 @@ function openAddSection(tripId, isReturn, parentId) {
           titleInput.placeholder = 'e.g. Packing List, Notes...';
           iconInput.placeholder = 'e.g. 📋';
         }
-      } else if (count === 1) {
-        // exactly one non-custom type selected — show optional title/icon override
-        const selectedKey = [...state.selectedSectionTypes][0];
-        const selectedTmpl = SECTION_TEMPLATES[selectedKey] || {};
-        customizeGroup.hidden = false;
-        labelEl.textContent = selectedTmpl.title;
-        reqBadge.hidden = true;
-        titleInput.placeholder = selectedTmpl.title;
-        iconInput.placeholder = selectedTmpl.icon || '';
-        iconInput.value = '';
-        titleInput.value = '';
       } else {
-        // Multiple non-custom selected — hide customize (each uses defaults)
+        // Non-custom selected — hide customize (each uses template defaults)
         customizeGroup.hidden = true;
       }
     });
@@ -2424,12 +2387,7 @@ function saveSection() {
     if (sectionType === 'custom') {
       title = customTitleInput;
       icon = customIconInput !== '' ? customIconInput : tmpl.icon;
-    } else if (state.selectedSectionTypes.size === 1) {
-      // Single non-custom: allow title/icon override
-      title = customTitleInput || tmpl.title;
-      icon = customIconInput !== '' ? customIconInput : tmpl.icon;
     } else {
-      // Multiple: use defaults
       title = tmpl.title;
       icon = tmpl.icon;
     }
