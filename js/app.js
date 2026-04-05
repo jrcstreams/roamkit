@@ -8,10 +8,7 @@ const ICON_UP = `<svg class="si" viewBox="0 0 10 11" fill="none" stroke="current
 const ICON_SHARE = `<svg class="si" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="2" r="1.5"/><circle cx="8.5" cy="9" r="1.5"/><circle cx="2" cy="5.5" r="1.5"/><line x1="3.5" y1="6.3" x2="7" y2="8.3"/><line x1="7" y1="2.7" x2="3.5" y2="4.7"/></svg>`;
 
 // Trip control panel SVG icons
-const ICON_CTRL_EXPAND   = `<svg class="ci" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="2.5" x2="9" y2="2.5"/><line x1="1" y1="5" x2="9" y2="5"/><polyline points="3.5,7.5 5,9.5 6.5,7.5"/></svg>`;
 const ICON_CTRL_ITINERARY = `<svg class="ci" viewBox="0 0 10 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="8" height="8.5" rx="1.5"/><line x1="3.5" y1="1" x2="3.5" y2="3.5"/><line x1="6.5" y1="1" x2="6.5" y2="3.5"/><line x1="2.5" y1="5.5" x2="7.5" y2="5.5"/><line x1="2.5" y1="7.5" x2="5.5" y2="7.5"/></svg>`;
-const ICON_CTRL_COLLAPSE = `<svg class="ci" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3.5,2.5 5,.5 6.5,2.5"/><line x1="1" y1="5" x2="9" y2="5"/><line x1="1" y1="7.5" x2="9" y2="7.5"/></svg>`;
-const ICON_CTRL_RETURN   = `<svg class="ci" viewBox="0 0 13 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2,4.5 H8.5 Q12,4.5 12,7.5 Q12,10.5 8.5,10.5 H4.5" transform="translate(0,-1)"/><polyline points="4,2 2,4.5 4,7" transform="translate(0,-0.5)"/></svg>`;
 const ICON_CTRL_CLOSE    = `<svg class="ci" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="8.5" y2="8.5"/><line x1="8.5" y1="1.5" x2="1.5" y2="8.5"/></svg>`;
 
 
@@ -28,8 +25,10 @@ const SECTION_TEMPLATES = {
       { label: 'Airline', type: 'text' },
       { label: 'From', type: 'text' },
       { label: 'To', type: 'text' },
-      { label: 'Departure', type: 'datetime-local' },
-      { label: 'Arrival', type: 'datetime-local' },
+      { label: 'Departure Date', type: 'date' },
+      { label: 'Departure Time', type: 'time' },
+      { label: 'Arrival Date', type: 'date' },
+      { label: 'Arrival Time', type: 'time' },
       { label: 'Confirmation #', type: 'text' },
       { label: 'Seat', type: 'text' },
       { label: 'Notes', type: 'textarea' }
@@ -39,12 +38,14 @@ const SECTION_TEMPLATES = {
     title: 'Car Rental', icon: '🚗',
     fields: [
       { label: 'Company', type: 'text' },
-      { label: 'Pickup Location', type: 'text' },
-      { label: 'Pickup Date/Time', type: 'datetime-local' },
-      { label: 'Return Location', type: 'text' },
-      { label: 'Return Date/Time', type: 'datetime-local' },
       { label: 'Confirmation #', type: 'text' },
       { label: 'Vehicle Type', type: 'text' },
+      { label: 'Pickup Location', type: 'text' },
+      { label: 'Pickup Date', type: 'date' },
+      { label: 'Pickup Time', type: 'time' },
+      { label: 'Return Location', type: 'text' },
+      { label: 'Return Date', type: 'date' },
+      { label: 'Return Time', type: 'time' },
       { label: 'Notes', type: 'textarea' }
     ]
   },
@@ -125,9 +126,7 @@ const SECTION_TEMPLATES = {
     title: 'Budget', icon: '💰',
     fields: [
       { label: 'Category', type: 'text' },
-      { label: 'Estimated Cost', type: 'number' },
-      { label: 'Actual Cost', type: 'number' },
-      { label: 'Currency', type: 'text' },
+      { label: 'Cost', type: 'number' },
       { label: 'Notes', type: 'text' }
     ]
   },
@@ -161,9 +160,9 @@ const WEB_LINKS = [
   { name: 'Viator', icon: '🎟️', url: q => `https://www.viator.com/searchResults/all?text=${encodeURIComponent(q)}` },
   { name: 'GetYourGuide', icon: '🌟', url: q => `https://www.getyourguide.com/s/?q=${encodeURIComponent(q)}` },
   { name: 'Yelp', icon: '🍴', url: q => `https://www.yelp.com/search?find_desc=things+to+do&find_loc=${encodeURIComponent(q)}` },
+  { name: 'Hotels', icon: '🏨', url: q => `https://www.google.com/travel/hotels/${encodeURIComponent(q)}` },
   { name: 'Airbnb Rentals', icon: '🏠', url: q => `https://www.airbnb.com/s/${encodeURIComponent(q)}/homes` },
   { name: 'Airbnb Exp.', icon: '🎭', url: q => `https://www.airbnb.com/s/${encodeURIComponent(q)}/experiences` },
-  { name: 'Hotels', icon: '🏨', url: q => `https://www.google.com/travel/hotels/${encodeURIComponent(q)}` },
 ];
 
 // ===== Module-level flags =====
@@ -912,8 +911,7 @@ function renderTripDetail() {
   else if (startStr) datesBadge = `<span class="trip-dates-badge">${startStr}</span>`;
 
   const outboundSections = trip.sections || [];
-  const returnSections = trip.returnSections || [];
-  const isEmpty = outboundSections.length === 0 && returnSections.length === 0 && !trip.hasReturnTrip;
+  const isEmpty = outboundSections.length === 0;
 
   let html = '';
 
@@ -941,16 +939,14 @@ function renderTripDetail() {
   html += `<div class="trip-control-panel">`;
   html += `<button class="trip-ctrl-btn trip-ctrl-primary" id="btn-add-section">+ Add Section</button>`;
   html += `<button class="trip-ctrl-btn trip-ctrl-secondary" id="btn-add-parent-section">+ Group</button>`;
-  html += `<button class="trip-ctrl-btn trip-ctrl-itinerary trip-ctrl-icon-btn" id="btn-itinerary" title="View itinerary">${ICON_CTRL_ITINERARY}<span class="ctrl-lbl">View Itinerary</span></button>`;
+  html += `<button class="trip-ctrl-btn trip-ctrl-itinerary" id="btn-itinerary">${ICON_CTRL_ITINERARY} View Itinerary</button>`;
   const hasExpandable = outboundSections.length > 1 || outboundSections.some(s => s.type === 'parent');
   if (hasExpandable) {
     html += `<span class="trip-ctrl-sep" aria-hidden="true"></span>`;
-    html += `<button class="trip-ctrl-btn trip-ctrl-ghost trip-ctrl-icon-btn" id="btn-expand-all" title="Expand all sections">${ICON_CTRL_EXPAND}<span class="ctrl-lbl">Expand</span></button>`;
-    html += `<button class="trip-ctrl-btn trip-ctrl-ghost trip-ctrl-icon-btn" id="btn-collapse-all" title="Collapse all sections">${ICON_CTRL_COLLAPSE}<span class="ctrl-lbl">Collapse</span></button>`;
-  }
-  html += `<span class="trip-ctrl-fill"></span>`;
-  if (!trip.hasReturnTrip) {
-    html += `<button class="trip-ctrl-btn trip-ctrl-return trip-ctrl-icon-btn" id="btn-add-return">${ICON_CTRL_RETURN}<span class="ctrl-lbl">Return Trip</span></button>`;
+    html += `<span class="trip-ctrl-expand-pair">`;
+    html += `<button class="trip-ctrl-btn trip-ctrl-ghost" id="btn-expand-all" title="Expand all">Expand All</button>`;
+    html += `<button class="trip-ctrl-btn trip-ctrl-ghost" id="btn-collapse-all" title="Collapse all">Collapse All</button>`;
+    html += `</span>`;
   }
   html += `</div>`; // trip-control-panel
 
@@ -985,26 +981,6 @@ function renderTripDetail() {
     html += `<div class="import-section-row">`;
     html += `<button class="btn-import-section" id="btn-import-section-outbound" data-import-target="outbound">${ICON_UP} Import Section or Group</button>`;
     html += `</div>`;
-
-    // Return trip
-    if (trip.hasReturnTrip) {
-      html += `<div class="return-trip-divider"><span class="return-badge">↩ Return Trip</span></div>`;
-      html += `<div class="return-sections-list" id="return-sections-list">`;
-      returnSections.forEach(section => {
-        if (section.type === 'parent') {
-          html += renderParentSectionHTML(section, trip.id, true);
-        } else {
-          html += renderSectionHTML(section, trip.id, true);
-        }
-      });
-      html += `</div>`;
-      html += `<div class="return-trip-actions-row">`;
-      html += `<button class="btn-ghost" id="btn-add-return-section">+ Add Return Section</button>`;
-      html += `<button class="btn-ghost" id="btn-add-return-parent-section">+ Add Return Group</button>`;
-      html += `<button class="btn-ghost" id="btn-import-section-return" data-import-target="return">${ICON_UP} Import</button>`;
-      html += `<button class="btn-ghost" id="btn-remove-return" style="border-color:var(--danger);color:var(--danger)">Remove Return Trip</button>`;
-      html += `</div>`;
-    }
   }
 
   html += `</div>`; // trip-content
@@ -1214,6 +1190,16 @@ function renderSectionHTML(section, tripId, _isReturn) {
   } else {
     html += `<div class="item-list" data-items-container="${section.id}"></div>`;
   }
+  // Budget total calculation
+  if (section.type === 'budget' && items.length > 0) {
+    let total = 0;
+    items.forEach(item => {
+      const costField = (item.fields || []).find(f => f.type === 'number' && f.value);
+      if (costField) total += parseFloat(costField.value) || 0;
+    });
+    const totalStr = total % 1 === 0 ? total.toLocaleString() : total.toFixed(2);
+    html += `<div class="budget-total"><span class="budget-total-label">Total</span><span class="budget-total-amount">${esc(totalStr)}</span></div>`;
+  }
   html += `<button class="btn-ghost" data-add-entry="${section.id}" data-entry-trip="${tripId}">+ Add Entry</button>`;
   html += `</div>`; // section-body
 
@@ -1351,13 +1337,16 @@ function renderItemHTML(item, sectionId, tripId, idx, sectionType, sectionTitle)
   const titleText = item.title || '';
   const baseTitle = sectionTitle || (SECTION_TEMPLATES[sectionType] || {}).title || 'Entry';
   const displayTitle = titleText || `${baseTitle} entry`;
+  const collapsedClass = item.collapsed ? ' collapsed' : '';
 
-  let html = `<div class="item-card" data-item-id="${item.id}">`;
-  html += `<div class="item-card-header">`;
+  let html = `<div class="item-card${collapsedClass}" data-item-id="${item.id}">`;
+  html += `<div class="item-card-header" data-item-toggle="${item.id}">`;
   html += `<span class="item-drag-handle" data-item-drag>⠿</span>`;
   html += `<span class="item-card-title" contenteditable="true" data-item-title="${item.id}" data-item-section="${sectionId}" data-item-trip="${tripId}" title="Click to rename">${esc(displayTitle)}</span>`;
+  html += `<span class="item-card-chevron">▶</span>`;
   html += `</div>`; // item-card-header
 
+  html += `<div class="item-card-body">`;
   html += `<div class="item-body-controls">`;
   html += `<button class="btn-icon btn-sm" data-add-field="${item.id}" data-field-section="${sectionId}" data-field-trip="${tripId}" title="Add field">+ Field</button>`;
   html += `<button class="btn-icon btn-sm" data-export-item="${item.id}" data-item-section="${sectionId}" data-item-trip="${tripId}" title="Export entry">${ICON_DN}</button>`;
@@ -1391,40 +1380,27 @@ function renderItemHTML(item, sectionId, tripId, idx, sectionType, sectionTitle)
     html += `</div>`;
   });
   html += `</div>`; // item-fields
+  html += `</div>`; // item-card-body
 
   html += `</div>`; // item-card
   return html;
 }
 
 function buildItinerary(trip, opts) {
-  // opts: { groupSectionId } — if set, only return items from that group
+  // opts: { groupSectionId } — if set, only return items from that specific group
   const DATE_TYPES = new Set(['date', 'datetime-local']);
   const TIME_TYPES = new Set(['time', 'datetime-local']);
   const mainItems = [];
-  const separateGroups = {}; // groupId → { title, items[] }
+  const separateGroups = {};
 
-  function processSection(sec, groupLabel, parentSec) {
-    if (sec.type === 'parent') {
-      if (opts && opts.groupSectionId) {
-        // Only process the specific group we're targeting
-        if (sec.id === opts.groupSectionId) {
-          (sec.children || []).forEach(child => processSection(child, sec.title, sec));
-        } else {
-          (sec.children || []).forEach(child => processSection(child, groupLabel, parentSec));
-        }
-      } else {
-        (sec.children || []).forEach(child => processSection(child, sec.title, sec));
-      }
-      return;
-    }
+  function collectItems(sec, groupLabel, parentSec) {
     if (sec.type === 'destinations') return;
-    (sec.items || []).forEach((item, itemIdx) => {
+    (sec.items || []).forEach(item => {
       const dateFields = (item.fields || []).filter(f => (DATE_TYPES.has(f.type) || TIME_TYPES.has(f.type)) && f.value);
       if (!dateFields.length) return;
       const sortField = dateFields.find(f => DATE_TYPES.has(f.type)) || dateFields[0];
-      const baseTitle = sec.title || 'Entry';
       const entry = {
-        title: item.title || `${baseTitle} entry`,
+        title: item.title || `${sec.title || 'Entry'} entry`,
         sectionTitle: sec.title,
         sectionIcon: sec.icon || '',
         groupLabel: groupLabel || '',
@@ -1434,9 +1410,7 @@ function buildItinerary(trip, opts) {
         separateGroupTitle: parentSec ? parentSec.title : '',
         separateGroupId: parentSec ? parentSec.id : ''
       };
-      if (opts && opts.groupSectionId) {
-        mainItems.push(entry);
-      } else if (entry.isSeparateGroup) {
+      if (!opts?.groupSectionId && entry.isSeparateGroup) {
         const gid = entry.separateGroupId;
         if (!separateGroups[gid]) separateGroups[gid] = { title: entry.separateGroupTitle, items: [] };
         separateGroups[gid].items.push(entry);
@@ -1446,8 +1420,33 @@ function buildItinerary(trip, opts) {
     });
   }
 
-  (trip.sections || []).forEach(s => processSection(s, '', null));
-  (trip.returnSections || []).forEach(s => processSection(s, '↩ Return', null));
+  function traverseSection(sec, groupLabel, parentSec) {
+    if (sec.type === 'parent') {
+      (sec.children || []).forEach(child => traverseSection(child, sec.title, sec));
+    } else {
+      collectItems(sec, groupLabel, parentSec);
+    }
+  }
+
+  if (opts && opts.groupSectionId) {
+    // Group-specific mode: find and traverse only that group
+    function findAndTraverse(sections) {
+      for (const sec of sections) {
+        if (sec.type === 'parent') {
+          if (sec.id === opts.groupSectionId) {
+            (sec.children || []).forEach(child => traverseSection(child, sec.title, sec));
+            return true;
+          }
+          if (findAndTraverse(sec.children || [])) return true;
+        }
+      }
+      return false;
+    }
+    findAndTraverse(trip.sections || []);
+  } else {
+    (trip.sections || []).forEach(sec => traverseSection(sec, '', null));
+  }
+
   mainItems.sort((a, b) => a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0);
   Object.values(separateGroups).forEach(g => g.items.sort((a, b) => a.sortKey < b.sortKey ? -1 : 1));
   return { mainItems, separateGroups };
@@ -1889,15 +1888,6 @@ function attachTripDetailEvents(trip) {
   const btnBlankAddParent = el('btn-blank-add-parent-section');
   if (btnBlankAddParent) btnBlankAddParent.addEventListener('click', () => openAddParentSection(trip.id, false));
 
-  const btnBlankReturn = el('btn-blank-return');
-  if (btnBlankReturn) btnBlankReturn.addEventListener('click', () => {
-    trip.hasReturnTrip = true;
-    trip.returnSections = trip.returnSections || [];
-    trip.updatedAt = new Date().toISOString();
-    save();
-    renderTripDetail();
-  });
-
   // Add section
   const btnAddSection = el('btn-add-section');
   if (btnAddSection) btnAddSection.addEventListener('click', () => openAddSection(trip.id, false));
@@ -1906,43 +1896,9 @@ function attachTripDetailEvents(trip) {
   const btnAddParentSection = el('btn-add-parent-section');
   if (btnAddParentSection) btnAddParentSection.addEventListener('click', () => openAddParentSection(trip.id, false));
 
-  // Add return trip
-  const btnAddReturn = el('btn-add-return');
-  if (btnAddReturn) btnAddReturn.addEventListener('click', () => {
-    trip.hasReturnTrip = true;
-    trip.returnSections = trip.returnSections || [];
-    trip.updatedAt = new Date().toISOString();
-    save();
-    renderTripDetail();
-  });
-
-  // Add return section
-  const btnAddReturnSection = el('btn-add-return-section');
-  if (btnAddReturnSection) btnAddReturnSection.addEventListener('click', () => openAddSection(trip.id, true));
-
-  // Add return parent section
-  const btnAddReturnParent = el('btn-add-return-parent-section');
-  if (btnAddReturnParent) btnAddReturnParent.addEventListener('click', () => openAddParentSection(trip.id, true));
-
-  // Remove return trip
-  const btnRemoveReturn = el('btn-remove-return');
-  if (btnRemoveReturn) btnRemoveReturn.addEventListener('click', () => {
-    if (confirm('Remove the return trip section and all its entries?')) {
-      trip.hasReturnTrip = false;
-      trip.returnSections = [];
-      trip.updatedAt = new Date().toISOString();
-      save();
-      renderTripDetail();
-    }
-  });
-
   // Import section (outbound)
   const btnImportOutbound = el('btn-import-section-outbound');
   if (btnImportOutbound) btnImportOutbound.addEventListener('click', () => openImportSection(trip.id, false, null, null));
-
-  // Import section (return)
-  const btnImportReturn = el('btn-import-section-return');
-  if (btnImportReturn) btnImportReturn.addEventListener('click', () => openImportSection(trip.id, true, null, null));
 }
 
 function expandCollapseAll(expand) {
@@ -1955,7 +1911,7 @@ function expandCollapseAll(expand) {
     });
   }
   applyExpand(trip.sections || []);
-  applyExpand(trip.returnSections || []);
+  trip.destsExpanded = expand;
   save();
   renderTripDetail();
 }
@@ -1980,6 +1936,29 @@ function attachSectionEvents(trip) {
     });
   });
 
+
+  // Item card toggle (collapse/expand entry)
+  content.querySelectorAll('[data-item-toggle]').forEach(header => {
+    header.addEventListener('click', e => {
+      if (e.target.closest('[contenteditable]') || e.target.closest('button')) return;
+      const card = header.closest('.item-card');
+      if (!card) return;
+      const itemId = card.dataset.itemId;
+      const isCollapsed = card.classList.toggle('collapsed');
+      const itemList = card.closest('[data-items-container]');
+      const sectionId = itemList ? itemList.dataset.itemsContainer : null;
+      if (!sectionId) return;
+      const t = getTrip(state.currentTripId);
+      if (!t) return;
+      const sec = getSection(t, sectionId);
+      const item = sec ? (sec.items || []).find(i => i.id === itemId) : null;
+      if (item) {
+        item.collapsed = isCollapsed;
+        t.updatedAt = new Date().toISOString();
+        save();
+      }
+    });
+  });
 
   // Parent section header click
   content.querySelectorAll('.parent-section-header').forEach(header => {
@@ -3539,8 +3518,10 @@ function fmtFieldValue(field) {
   return field.value;
 }
 
-function formatItemText(item, idx) {
-  const title = item.title || `Entry ${idx + 1}`;
+function formatItemText(item, idx, sectionTitle, isMultiple) {
+  const base = sectionTitle || 'Entry';
+  const suffix = isMultiple ? ` ${idx + 1}` : '';
+  const title = item.title || `${base}${suffix}`;
   let lines = [`  ${title.toUpperCase()}`];
   (item.fields || []).forEach(f => {
     const val = fmtFieldValue(f);
@@ -3566,10 +3547,11 @@ function formatSectionText(section, includeHeader = true, indent = 0) {
   }
 
   const items = section.items || [];
+  const isMultiple = items.length > 1;
   if (items.length > 0) {
     items.forEach((item, idx) => {
       lines.push('');
-      const itemLines = formatItemText(item, idx).split('\n');
+      const itemLines = formatItemText(item, idx, section.title, isMultiple).split('\n');
       itemLines.forEach(l => {
         const trimmed = l.trimStart();
         lines.push(trimmed ? pad + trimmed : '');
@@ -3606,18 +3588,6 @@ function formatTripText(trip) {
     lines.push('');
     lines.push(formatSectionText(sec, true));
   });
-
-  if (trip.hasReturnTrip && (trip.returnSections || []).length > 0) {
-    lines.push('');
-    lines.push('');
-    lines.push('┄'.repeat(42));
-    lines.push('  ↩  RETURN TRIP');
-    lines.push('┄'.repeat(42));
-    (trip.returnSections || []).forEach(sec => {
-      lines.push('');
-      lines.push(formatSectionText(sec, true));
-    });
-  }
 
   return lines.join('\n');
 }
