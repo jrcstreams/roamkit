@@ -1266,34 +1266,62 @@ function renderSectionDestinationsHTML(section, tripId) {
 
 function renderGroupDestinationsHTML(section, tripId) {
   const dests = section.groupDestinations || [];
-  let html = `<div class="group-dests-section" data-group-dests-id="${section.id}">`;
+  let html = `<div class="group-dests-section" data-group-dests-id="${esc(section.id)}">`;
   html += `<div class="group-dests-header">`;
   html += `<span class="group-dests-icon">📍</span>`;
   html += `<span class="group-dests-title">Group Destinations</span>`;
   html += `</div>`;
-  if (dests.length > 0) {
-    dests.forEach(dest => {
-      const label = [dest.name, dest.country].filter(Boolean).join(', ');
-      html += `<div class="group-dest-row" data-gdest-id="${dest.id}" data-gdest-group="${section.id}" data-gdest-trip="${tripId}">`;
-      html += `<span class="trip-dest-name">${esc(label)}</span>`;
-      if (dest.startDate || dest.endDate) {
-        const ds = fmtDate(dest.startDate), de = fmtDate(dest.endDate);
-        const dStr = ds && de ? `${ds} – ${de}` : ds ? `From ${ds}` : `Until ${de}`;
-        html += `<span class="trip-dest-dates">${dStr}</span>`;
-      }
-      html += `<div class="group-dest-row-actions">`;
-      html += `<button class="btn-icon btn-sm" data-edit-gdest="${dest.id}" data-gdest-group="${section.id}" data-gdest-trip="${tripId}" title="Edit">✎</button>`;
-      html += `<button class="btn-icon btn-sm danger" data-delete-gdest="${dest.id}" data-gdest-group="${section.id}" data-gdest-trip="${tripId}" title="Delete">🗑</button>`;
+
+  dests.forEach(dest => {
+    const q = dest.country ? `${dest.name}, ${dest.country}` : (dest.name || '');
+    const label = [dest.name, dest.country].filter(Boolean).join(', ') || 'Unnamed Destination';
+    html += `<div class="trip-dest-row" data-dest-id="${esc(dest.id)}">`;
+    html += `<div class="trip-dest-row-header" data-gdest-toggle="${esc(dest.id)}">`;
+    html += `<span class="trip-dest-row-icon">📍</span>`;
+    html += `<div class="trip-dest-row-meta">`;
+    html += `<span class="trip-dest-name">${esc(label)}</span>`;
+    if (dest.startDate || dest.endDate) {
+      const ds = fmtDate(dest.startDate), de = fmtDate(dest.endDate);
+      const dStr = ds && de ? `${ds} – ${de}` : ds ? `From ${ds}` : `Until ${de}`;
+      html += `<span class="trip-dest-dates">${dStr}</span>`;
+    }
+    html += `</div>`;
+    html += `<span class="trip-dest-row-chevron">▶</span>`;
+    html += `</div>`; // trip-dest-row-header
+
+    html += `<div class="trip-dest-row-body">`;
+    html += `<div class="trip-dest-edit-fields">`;
+    html += `<div class="trip-dest-field-row"><span class="trip-dest-field-label">Place</span>`;
+    html += `<input type="text" class="trip-dest-field" data-gdest-field="${esc(dest.id)}" data-gdest-key="name" data-gdest-group="${esc(section.id)}" data-gdest-trip="${esc(tripId)}" value="${esc(dest.name || '')}"></div>`;
+    html += `<div class="trip-dest-field-row"><span class="trip-dest-field-label">Country</span>`;
+    html += `<input type="text" class="trip-dest-field" data-gdest-field="${esc(dest.id)}" data-gdest-key="country" data-gdest-group="${esc(section.id)}" data-gdest-trip="${esc(tripId)}" value="${esc(dest.country || '')}"></div>`;
+    html += `<div class="trip-dest-field-row"><span class="trip-dest-field-label">Arrival</span>`;
+    html += `<input type="date" class="trip-dest-field" data-gdest-field="${esc(dest.id)}" data-gdest-key="startDate" data-gdest-group="${esc(section.id)}" data-gdest-trip="${esc(tripId)}" value="${esc(dest.startDate || '')}"></div>`;
+    html += `<div class="trip-dest-field-row"><span class="trip-dest-field-label">Departure</span>`;
+    html += `<input type="date" class="trip-dest-field" data-gdest-field="${esc(dest.id)}" data-gdest-key="endDate" data-gdest-group="${esc(section.id)}" data-gdest-trip="${esc(tripId)}" value="${esc(dest.endDate || '')}"></div>`;
+    html += `<div class="trip-dest-field-row trip-dest-field-full"><span class="trip-dest-field-label">Notes</span>`;
+    html += `<textarea class="trip-dest-field" data-gdest-field="${esc(dest.id)}" data-gdest-key="notes" data-gdest-group="${esc(section.id)}" data-gdest-trip="${esc(tripId)}">${esc(dest.notes || '')}</textarea></div>`;
+    html += `</div>`; // trip-dest-edit-fields
+
+    if (q) {
+      html += `<div class="trip-dest-resources-section">`;
+      html += `<div class="trip-dest-resources-label">Travel Resources</div>`;
+      html += `<div class="dest-links-grid">`;
+      WEB_LINKS.forEach(link => {
+        html += `<a href="${link.url(q)}" target="_blank" rel="noopener noreferrer" class="dest-link-card">`;
+        html += `<span class="dest-link-icon">${link.icon}</span><span class="dest-link-name">${esc(link.name)}</span></a>`;
+      });
       html += `</div></div>`;
-    });
-  }
-  html += `<div class="group-dests-add-form">`;
-  html += `<input type="text" class="trip-dest-input" data-gdest-name="${section.id}" placeholder="City / Place">`;
-  html += `<input type="text" class="trip-dest-input" data-gdest-country="${section.id}" placeholder="Country">`;
-  html += `<input type="date" class="trip-dest-input trip-dest-input-date" data-gdest-start="${section.id}" title="Arrival">`;
-  html += `<input type="date" class="trip-dest-input trip-dest-input-date" data-gdest-end="${section.id}" title="Departure">`;
-  html += `<button class="btn-primary btn-sm" data-gdest-add="${section.id}" data-gdest-trip="${tripId}">+ Add</button>`;
-  html += `</div>`;
+    }
+
+    html += `<div class="trip-dest-row-controls">`;
+    html += `<button class="btn-icon btn-sm danger" data-delete-gdest="${esc(dest.id)}" data-gdest-group="${esc(section.id)}" data-gdest-trip="${esc(tripId)}" title="Delete destination">🗑 Delete</button>`;
+    html += `</div>`;
+    html += `</div>`; // trip-dest-row-body
+    html += `</div>`; // trip-dest-row
+  });
+
+  html += `<button class="btn-ghost" style="margin-top:.3rem" data-add-group-dest="${esc(section.id)}" data-gdest-trip="${esc(tripId)}">+ Add Destination</button>`;
   html += `</div>`;
   return html;
 }
@@ -1344,7 +1372,6 @@ function renderParentSectionHTML(section, tripId, isReturn) {
   html += `<div class="parent-section-footer">`;
   html += `<button class="btn-ghost" data-add-child-section="${section.id}" data-parent-trip="${tripId}">+ Add Subsection</button>`;
   html += `<button class="btn-ghost" data-add-child-group="${section.id}" data-parent-trip="${tripId}">+ Add Subgroup</button>`;
-  if (!isSep) html += `<button class="btn-ghost" data-add-group-dest="${section.id}" data-parent-trip="${tripId}">📍 Add Destination</button>`;
   html += `<button class="btn-import-section btn-import-child" data-import-parent="${section.id}" data-parent-trip="${tripId}">${ICON_UP} Import</button>`;
   html += `</div>`;
   html += `</div>`; // parent-section-body
@@ -1898,6 +1925,56 @@ function attachTripDetailEvents(trip) {
       if (!dest) return;
       dest[key] = input.value;
       // Update the visible name in the header
+      if (key === 'name' || key === 'country') {
+        const nameEl = document.querySelector(`.trip-dest-row[data-dest-id="${destId}"] .trip-dest-name`);
+        if (nameEl) {
+          const label = [dest.name, dest.country].filter(Boolean).join(', ') || 'Unnamed Destination';
+          nameEl.textContent = label;
+        }
+      }
+      if (key === 'startDate' || key === 'endDate') {
+        const metaEl = document.querySelector(`.trip-dest-row[data-dest-id="${destId}"] .trip-dest-row-meta`);
+        if (metaEl) {
+          const ds = fmtDate(dest.startDate), de = fmtDate(dest.endDate);
+          const dStr = ds && de ? `${ds} – ${de}` : ds ? `From ${ds}` : de ? `Until ${de}` : '';
+          let datesEl = metaEl.querySelector('.trip-dest-dates');
+          if (dStr && !datesEl) {
+            datesEl = document.createElement('span');
+            datesEl.className = 'trip-dest-dates';
+            metaEl.appendChild(datesEl);
+          }
+          if (datesEl) datesEl.textContent = dStr;
+          if (!dStr && datesEl) datesEl.remove();
+        }
+      }
+      t.updatedAt = new Date().toISOString();
+      save();
+    });
+  });
+
+  // Group Destinations accordion toggle
+  document.querySelectorAll('[data-gdest-toggle]').forEach(header => {
+    header.addEventListener('click', e => {
+      if (e.target.closest('input, textarea, a, button')) return;
+      const row = header.closest('.trip-dest-row');
+      if (row) row.classList.toggle('expanded');
+    });
+  });
+
+  // Group Destinations inline field save
+  document.querySelectorAll('[data-gdest-field]').forEach(input => {
+    input.addEventListener('change', () => {
+      const destId = input.dataset.gdestField;
+      const key = input.dataset.gdestKey;
+      const groupId = input.dataset.gdestGroup;
+      const tId = input.dataset.gdestTrip;
+      const t = getTrip(tId);
+      if (!t) return;
+      const sec = getSection(t, groupId);
+      if (!sec) return;
+      const dest = (sec.groupDestinations || []).find(d => d.id === destId);
+      if (!dest) return;
+      dest[key] = input.value;
       if (key === 'name' || key === 'country') {
         const nameEl = document.querySelector(`.trip-dest-row[data-dest-id="${destId}"] .trip-dest-name`);
         if (nameEl) {

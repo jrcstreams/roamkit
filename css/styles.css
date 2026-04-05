@@ -1628,35 +1628,11 @@ textarea.trip-dest-field { resize: vertical; min-height: 54px; }
   display: flex;
   align-items: center;
   gap: .45rem;
-  margin-bottom: .5rem;
+  margin-bottom: .4rem;
 }
 .group-dests-icon { font-size: .9rem; }
 .group-dests-title { font-weight: 700; font-size: .82rem; color: var(--text); flex: 1; }
-.group-dest-row {
-  display: flex;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: .3rem .5rem;
-  padding: .35rem .45rem;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  margin-bottom: .3rem;
-}
-.group-dest-row .trip-dest-name { font-size: .82rem; font-weight: 600; flex: 1; }
-.group-dest-row .trip-dest-dates { font-size: .71rem; margin-top: 0; }
-.group-dest-row-actions { display: flex; gap: .1rem; flex-shrink: 0; margin-left: auto; }
-.group-dests-add-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .35rem;
-  align-items: flex-end;
-  padding-top: .45rem;
-  border-top: 1px solid var(--border);
-  margin-top: .4rem;
-}
-.group-dests-add-form .trip-dest-input { flex: 1; min-width: 80px; font-size: .8rem; padding: .25rem .45rem; }
-.group-dests-add-form .trip-dest-input-date { max-width: 130px; min-width: 110px; }
+/* Group dest rows reuse .trip-dest-row styles — no extra rules needed */
 
 /* ===== Itinerary separate group section ===== */
 .itin-sep-group {
