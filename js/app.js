@@ -92,7 +92,7 @@ const SECTION_TEMPLATES = {
   transport: {
     title: 'Transport', icon: '🚆',
     fields: [
-      { label: 'Type (Bus/Train/Ferry...)', type: 'text' },
+      { label: 'Type', type: 'text' },
       { label: 'From', type: 'text' },
       { label: 'To', type: 'text' },
       { label: 'Date', type: 'date' },
@@ -939,6 +939,7 @@ function renderTripDetail() {
   html += `<div class="trip-control-panel">`;
   html += `<button class="trip-ctrl-btn trip-ctrl-primary" id="btn-add-section">+ Add Section</button>`;
   html += `<button class="trip-ctrl-btn trip-ctrl-secondary" id="btn-add-parent-section">+ Group</button>`;
+  html += `<span class="trip-ctrl-sep" aria-hidden="true"></span>`;
   html += `<button class="trip-ctrl-btn trip-ctrl-itinerary" id="btn-itinerary">${ICON_CTRL_ITINERARY} View Itinerary</button>`;
   const hasExpandable = outboundSections.length > 1 || outboundSections.some(s => s.type === 'parent');
   if (hasExpandable) {
@@ -1154,6 +1155,20 @@ function renderTripDestinationsSection(trip) {
   return html;
 }
 
+function renderBudgetRowHTML(item, sectionId, tripId) {
+  const fields = item.fields || [];
+  const catField = fields.find(f => f.label === 'Category') || fields[0];
+  const costField = fields.find(f => f.label === 'Cost' || f.type === 'number') || fields[1];
+  const notesField = fields.find(f => f.label === 'Notes') || fields[2];
+  if (!catField || !costField) return '';
+  return `<div class="budget-row" data-item-id="${esc(item.id)}">` +
+    `<input class="budget-cat" placeholder="Category" data-field-input="${esc(catField.id)}" data-item-id="${esc(item.id)}" data-section-id="${esc(sectionId)}" data-trip-id="${esc(tripId)}" value="${esc(catField.value || '')}">` +
+    `<input class="budget-cost" type="number" min="0" step="0.01" placeholder="0.00" data-field-input="${esc(costField.id)}" data-item-id="${esc(item.id)}" data-section-id="${esc(sectionId)}" data-trip-id="${esc(tripId)}" data-budget-section="${esc(sectionId)}" value="${esc(costField.value || '')}">` +
+    (notesField ? `<input class="budget-notes" placeholder="Notes" data-field-input="${esc(notesField.id)}" data-item-id="${esc(item.id)}" data-section-id="${esc(sectionId)}" data-trip-id="${esc(tripId)}" value="${esc(notesField.value || '')}">` : '') +
+    `<button class="btn-icon btn-sm danger" data-delete-item="${esc(item.id)}" data-item-section="${esc(sectionId)}" data-item-trip="${esc(tripId)}" title="Delete">🗑</button>` +
+    `</div>`;
+}
+
 function renderSectionHTML(section, tripId, _isReturn) {
   if (section.type === 'destinations') {
     return renderSectionDestinationsHTML(section, tripId);
@@ -1181,26 +1196,32 @@ function renderSectionHTML(section, tripId, _isReturn) {
   html += `<button class="btn-icon btn-sm" data-rename-section="${section.id}" title="Rename section">✎</button>`;
   html += `<button class="btn-icon btn-sm danger" data-delete-section="${section.id}" data-section-trip="${tripId}" title="Delete section">🗑</button>`;
   html += `</div>`;
-  if (items.length > 0) {
-    html += `<div class="item-list" data-items-container="${section.id}">`;
-    items.forEach((item, idx) => {
-      html += renderItemHTML(item, section.id, tripId, idx, section.type, section.title);
+  if (section.type === 'budget') {
+    html += `<div class="budget-rows" data-items-container="${section.id}">`;
+    items.forEach(item => {
+      html += renderBudgetRowHTML(item, section.id, tripId);
     });
     html += `</div>`;
-  } else {
-    html += `<div class="item-list" data-items-container="${section.id}"></div>`;
-  }
-  // Budget total calculation
-  if (section.type === 'budget' && items.length > 0) {
     let total = 0;
     items.forEach(item => {
-      const costField = (item.fields || []).find(f => f.type === 'number' && f.value);
-      if (costField) total += parseFloat(costField.value) || 0;
+      const costField = (item.fields || []).find(f => f.type === 'number');
+      if (costField && costField.value) total += parseFloat(costField.value) || 0;
     });
     const totalStr = total % 1 === 0 ? total.toLocaleString() : total.toFixed(2);
-    html += `<div class="budget-total"><span class="budget-total-label">Total</span><span class="budget-total-amount">${esc(totalStr)}</span></div>`;
+    html += `<div class="budget-total"><span class="budget-total-label">Total</span><span class="budget-total-amount" id="budget-total-${esc(section.id)}">${esc(totalStr)}</span></div>`;
+    html += `<button class="btn-ghost" data-add-entry="${section.id}" data-entry-trip="${tripId}">+ Add Budget Item</button>`;
+  } else {
+    if (items.length > 0) {
+      html += `<div class="item-list" data-items-container="${section.id}">`;
+      items.forEach((item, idx) => {
+        html += renderItemHTML(item, section.id, tripId, idx, section.type, section.title);
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="item-list" data-items-container="${section.id}"></div>`;
+    }
+    html += `<button class="btn-ghost" data-add-entry="${section.id}" data-entry-trip="${tripId}">+ Add Entry</button>`;
   }
-  html += `<button class="btn-ghost" data-add-entry="${section.id}" data-entry-trip="${tripId}">+ Add Entry</button>`;
   html += `</div>`; // section-body
 
   html += `</div>`; // content-section
@@ -1392,6 +1413,29 @@ function buildItinerary(trip, opts) {
   const TIME_TYPES = new Set(['time', 'datetime-local']);
   const mainItems = [];
   const separateGroups = {};
+
+  // Include trip-level destinations as itinerary entries (main itinerary only)
+  if (!(opts && opts.groupSectionId)) {
+    (trip.destinations || []).forEach(dest => {
+      const dateVal = dest.startDate || dest.endDate;
+      if (!dateVal) return;
+      const fields = [];
+      if (dest.name) fields.push({ id: 'dn', label: 'Place', type: 'text', value: dest.name });
+      if (dest.country) fields.push({ id: 'dc', label: 'Country', type: 'text', value: dest.country });
+      if (dest.startDate) fields.push({ id: 'ds', label: 'Arrival', type: 'date', value: dest.startDate });
+      if (dest.endDate) fields.push({ id: 'de', label: 'Departure', type: 'date', value: dest.endDate });
+      mainItems.push({
+        title: dest.name || 'Destination',
+        sectionTitle: 'Destination',
+        sectionIcon: '📍',
+        groupLabel: '',
+        fields,
+        sortKey: dateVal,
+        isSeparateGroup: false,
+        separateGroupId: ''
+      });
+    });
+  }
 
   function collectItems(sec, groupLabel, parentSec) {
     if (sec.type === 'destinations') return;
@@ -2292,6 +2336,10 @@ function attachSectionEvents(trip) {
         input.dataset.tripId,
         input.value
       );
+      // Live budget total update
+      if (input.dataset.budgetSection) {
+        updateBudgetTotal(input.dataset.budgetSection);
+      }
       // manage date/time placeholder visibility
       const wrapper = input.closest('.date-input-wrapper');
       if (wrapper) wrapper.classList.toggle('has-value', !!input.value);
@@ -2301,6 +2349,16 @@ function attachSectionEvents(trip) {
       if (wrapper) wrapper.classList.toggle('has-value', !!input.value);
     });
   });
+}
+
+function updateBudgetTotal(sectionId) {
+  const el = document.getElementById('budget-total-' + sectionId);
+  if (!el) return;
+  let total = 0;
+  document.querySelectorAll('[data-budget-section]').forEach(inp => {
+    if (inp.dataset.budgetSection === sectionId) total += parseFloat(inp.value) || 0;
+  });
+  el.textContent = total % 1 === 0 ? total.toLocaleString() : total.toFixed(2);
 }
 
 function attachSortables(_trip) {
@@ -2363,6 +2421,8 @@ function attachCrossContainerSectionDrag() {
   let offsetX = 0, offsetY = 0;
   let moved = false;
   let startX = 0, startY = 0;
+  let hoverTarget = null;
+  let hoverTimer = null;
 
   // Collect all valid drop containers (visible, not inside dragEl, not dragEl's own children container)
   function getAllContainers() {
@@ -2461,6 +2521,25 @@ function attachCrossContainerSectionDrag() {
     ghost.style.left = (e.clientX - offsetX) + 'px';
     ghost.style.top = (e.clientY - offsetY) + 'px';
 
+    // Hover-expand collapsed groups: if cursor lingers over a collapsed parent for ~500ms, expand it
+    const elemUnder = document.elementFromPoint(e.clientX, e.clientY);
+    const collapsedParent = elemUnder ? elemUnder.closest('.parent-section:not(.expanded)') : null;
+    if (collapsedParent !== hoverTarget) {
+      clearTimeout(hoverTimer);
+      hoverTarget = collapsedParent;
+      if (collapsedParent) {
+        hoverTimer = setTimeout(() => {
+          collapsedParent.classList.add('expanded');
+          const t = getTrip(state.currentTripId);
+          if (t) {
+            const sec = getSection(t, collapsedParent.dataset.sectionId);
+            if (sec) { sec.expanded = true; save(); }
+          }
+          hoverTarget = null;
+        }, 500);
+      }
+    }
+
     // Find the insertion point closest to the cursor's Y position
     const points = getInsertionPoints();
     if (points.length === 0) return;
@@ -2486,6 +2565,8 @@ function attachCrossContainerSectionDrag() {
     document.removeEventListener('pointercancel', end);
     document.body.classList.remove('is-section-dragging');
     enableDragSelection();
+    clearTimeout(hoverTimer);
+    hoverTarget = null;
 
     if (ghost) { ghost.remove(); ghost = null; }
     if (dragEl) dragEl.classList.remove('drag-placeholder');
