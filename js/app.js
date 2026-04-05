@@ -13,6 +13,13 @@ const ICON_CTRL_COLLAPSE = `<svg class="ci" viewBox="0 0 10 12" fill="none" stro
 const ICON_CTRL_RETURN   = `<svg class="ci" viewBox="0 0 13 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2,4.5 H8.5 Q12,4.5 12,7.5 Q12,10.5 8.5,10.5 H4.5" transform="translate(0,-1)"/><polyline points="4,2 2,4.5 4,7" transform="translate(0,-0.5)"/></svg>`;
 const ICON_CTRL_CLOSE    = `<svg class="ci" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="8.5" y2="8.5"/><line x1="8.5" y1="1.5" x2="1.5" y2="8.5"/></svg>`;
 
+const ENTRY_TITLE_PREFIXES = {
+  flights: 'Flight', car_rental: 'Rental', lodging: 'Stay',
+  restaurants: 'Restaurant', events: 'Event', transport: 'Leg',
+  activities: 'Activity', packing: 'Item', budget: 'Expense',
+  notes: 'Note', custom: 'Entry',
+};
+
 const COLOR_PRESETS = [
   '#1a56db', '#0e9f6e', '#d97706', '#e02424',
   '#7e3af2', '#0891b2', '#db2777', '#374151'
@@ -518,7 +525,7 @@ function renderSidebar() {
     const isCollapsed = delSection ? delSection.classList.contains('collapsed') : false;
     html += `<div class="deleted-trips-section ${isCollapsed ? 'collapsed' : ''}">`;
     html += `<div class="deleted-trips-header">`;
-    html += `<span class="deleted-trips-label">🗑 Recently Deleted</span>`;
+    html += `<span class="deleted-trips-label">Recently Deleted</span>`;
     html += `<span class="deleted-chevron">▶</span>`;
     html += `</div>`;
     html += `<div class="deleted-trips-list">`;
@@ -930,6 +937,7 @@ function renderTripDetail() {
   html += `<button class="btn-secondary btn-sm" id="btn-edit-trip">✎ Edit</button>`;
   html += `<button class="btn-secondary btn-sm" id="btn-export-trip">${ICON_DN} Export</button>`;
   html += `<button class="btn-secondary btn-sm" id="btn-share-trip">${ICON_SHARE} Share</button>`;
+  html += `<button class="btn-icon trip-close-btn" id="btn-close-trip" title="Close trip">${ICON_CTRL_CLOSE}</button>`;
   html += `</div>`;
   html += `</div>`; // trip-header-top
 
@@ -947,7 +955,6 @@ function renderTripDetail() {
   if (!trip.hasReturnTrip) {
     html += `<button class="trip-ctrl-btn trip-ctrl-return trip-ctrl-icon-btn" id="btn-add-return">${ICON_CTRL_RETURN}<span class="ctrl-lbl">Return Trip</span></button>`;
   }
-  html += `<button class="trip-ctrl-btn trip-ctrl-close trip-ctrl-icon-btn" id="btn-close-trip" title="Close trip">${ICON_CTRL_CLOSE}</button>`;
   html += `</div>`; // trip-control-panel
 
   html += `</div>`; // trip-header-inner
@@ -955,6 +962,12 @@ function renderTripDetail() {
 
   // Content
   html += `<div class="trip-content" id="trip-content">`;
+
+  // Destinations strip — only when destinations exist
+  const allDests = collectTripDestinations(trip);
+  if (allDests.length > 0) {
+    html += renderDestinationsStripHTML(allDests);
+  }
 
   if (isEmpty) {
     html += `<div class="blank-slate">`;
@@ -1065,6 +1078,50 @@ function renderDestCardHTML(dest) {
   return html;
 }
 
+function collectTripDestinations(trip) {
+  const dests = [];
+  (trip.destinations || []).forEach(d => dests.push(d));
+  function scan(sections) {
+    (sections || []).forEach(sec => {
+      if (sec.type === 'destinations') (sec.items || []).forEach(d => dests.push(d));
+      if (sec.type === 'parent') scan(sec.children || []);
+    });
+  }
+  scan(trip.sections || []);
+  scan(trip.returnSections || []);
+  return dests;
+}
+
+function renderDestinationsStripHTML(dests) {
+  if (!dests.length) return '';
+  let html = `<div class="dest-strip" id="dest-strip">`;
+  html += `<div class="dest-strip-header">`;
+  html += `<span class="dest-strip-label">📍 Destinations</span>`;
+  html += `<div class="dest-strip-chips">`;
+  dests.forEach(dest => {
+    const label = [dest.name, dest.country].filter(Boolean).join(', ');
+    html += `<button class="dest-strip-chip" data-strip-dest="${dest.id}" title="View resources for ${esc(label)}">${esc(label)}</button>`;
+  });
+  html += `</div>`;
+  html += `</div>`;
+  dests.forEach(dest => {
+    const q = dest.country ? `${dest.name}, ${dest.country}` : dest.name;
+    const label = [dest.name, dest.country].filter(Boolean).join(', ');
+    html += `<div class="dest-strip-panel" id="dest-strip-panel-${dest.id}">`;
+    html += `<div class="dest-strip-panel-title">Resources for <strong>${esc(label)}</strong></div>`;
+    html += `<div class="dest-links-grid">`;
+    WEB_LINKS.forEach(link => {
+      html += `<a href="${link.url(q)}" target="_blank" rel="noopener noreferrer" class="dest-link-card">`;
+      html += `<span class="dest-link-icon">${link.icon}</span>`;
+      html += `<span class="dest-link-name">${esc(link.name)}</span>`;
+      html += `</a>`;
+    });
+    html += `</div></div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
 function renderSectionHTML(section, tripId, _isReturn) {
   if (section.type === 'destinations') {
     return renderSectionDestinationsHTML(section, tripId);
@@ -1081,21 +1138,21 @@ function renderSectionHTML(section, tripId, _isReturn) {
   if (icon) html += `<span class="section-icon" data-section-icon="${section.id}">${icon}</span>`;
   else html += `<span class="section-icon section-icon-empty" data-section-icon="${section.id}"></span>`;
   html += `<span class="section-title-text" data-section-title-text="${section.id}">${esc(section.title)}</span>`;
-  html += `<span class="section-header-actions">`;
+  html += `<span class="section-chevron">▶</span>`;
+  html += `</div>`; // content-section-header
+
+  html += `<div class="section-body">`;
+  html += `<div class="section-body-controls">`;
   html += `<button class="btn-icon btn-sm" data-export-section="${section.id}" data-export-trip="${tripId}" title="Export section">${ICON_DN}</button>`;
   html += `<button class="btn-icon btn-sm" data-import-section="${section.id}" data-import-trip="${tripId}" title="Import into section">${ICON_UP}</button>`;
   html += `<button class="btn-icon btn-sm" data-share-section="${section.id}" data-share-trip="${tripId}" title="Share section">${ICON_SHARE}</button>`;
   html += `<button class="btn-icon btn-sm" data-rename-section="${section.id}" title="Rename section">✎</button>`;
   html += `<button class="btn-icon btn-sm danger" data-delete-section="${section.id}" data-section-trip="${tripId}" title="Delete section">🗑</button>`;
-  html += `</span>`;
-  html += `<span class="section-chevron">▶</span>`;
-  html += `</div>`; // content-section-header
-
-  html += `<div class="section-body">`;
+  html += `</div>`;
   if (items.length > 0) {
     html += `<div class="item-list" data-items-container="${section.id}">`;
     items.forEach((item, idx) => {
-      html += renderItemHTML(item, section.id, tripId, idx);
+      html += renderItemHTML(item, section.id, tripId, idx, section.type);
     });
     html += `</div>`;
   } else {
@@ -1119,17 +1176,17 @@ function renderSectionDestinationsHTML(section, tripId) {
   if (destIcon) html += `<span class="section-icon" data-section-icon="${section.id}">${destIcon}</span>`;
   else html += `<span class="section-icon section-icon-empty" data-section-icon="${section.id}"></span>`;
   html += `<span class="section-title-text" data-section-title-text="${section.id}">${esc(section.title)}</span>`;
-  html += `<span class="section-header-actions">`;
+  html += `<span class="section-chevron">▶</span>`;
+  html += `</div>`;
+
+  html += `<div class="section-body">`;
+  html += `<div class="section-body-controls">`;
   html += `<button class="btn-icon btn-sm" data-export-section="${section.id}" data-export-trip="${tripId}" title="Export section">${ICON_DN}</button>`;
   html += `<button class="btn-icon btn-sm" data-import-section="${section.id}" data-import-trip="${tripId}" title="Import into section">${ICON_UP}</button>`;
   html += `<button class="btn-icon btn-sm" data-share-section="${section.id}" data-share-trip="${tripId}" title="Share section">${ICON_SHARE}</button>`;
   html += `<button class="btn-icon btn-sm" data-rename-section="${section.id}" title="Rename section">✎</button>`;
   html += `<button class="btn-icon btn-sm danger" data-delete-section="${section.id}" data-section-trip="${tripId}" title="Delete section">🗑</button>`;
-  html += `</span>`;
-  html += `<span class="section-chevron">▶</span>`;
   html += `</div>`;
-
-  html += `<div class="section-body">`;
   if (dests.length > 0) {
     html += `<div class="dest-grid">`;
     dests.forEach(dest => {
@@ -1155,17 +1212,16 @@ function renderParentSectionHTML(section, tripId, isReturn) {
   if (parentIcon) html += `<span class="parent-section-icon" data-section-icon="${section.id}">${parentIcon}</span>`;
   else html += `<span class="parent-section-icon section-icon-empty" data-section-icon="${section.id}"></span>`;
   html += `<span class="parent-section-title" data-section-title-text="${section.id}">${esc(section.title)}</span>`;
-  html += `<span class="parent-section-header-actions">`;
-  html += `<button class="btn-icon btn-sm" data-export-section="${section.id}" data-export-trip="${tripId}" title="Export group">${ICON_DN}</button>`;
-  html += `<button class="btn-icon btn-sm" data-import-section="${section.id}" data-import-trip="${tripId}" title="Import into group">${ICON_UP}</button>`;
-  html += `<button class="btn-icon btn-sm" data-share-section="${section.id}" data-share-trip="${tripId}" title="Share group">${ICON_SHARE}</button>`;
-  html += `<button class="btn-icon btn-sm" data-rename-section="${section.id}" title="Rename">✎</button>`;
-  html += `<button class="btn-icon btn-sm danger" data-delete-section="${section.id}" data-section-trip="${tripId}" title="Delete">🗑</button>`;
-  html += `</span>`;
   html += `<span class="parent-section-chevron">▶</span>`;
   html += `</div>`; // parent-section-header
 
   html += `<div class="parent-section-body">`;
+  html += `<div class="group-body-controls">`;
+  html += `<button class="btn-icon btn-sm" data-export-section="${section.id}" data-export-trip="${tripId}" title="Export group">${ICON_DN}</button>`;
+  html += `<button class="btn-icon btn-sm" data-share-section="${section.id}" data-share-trip="${tripId}" title="Share group">${ICON_SHARE}</button>`;
+  html += `<button class="btn-icon btn-sm" data-rename-section="${section.id}" title="Rename group">✎</button>`;
+  html += `<button class="btn-icon btn-sm danger" data-delete-section="${section.id}" data-section-trip="${tripId}" title="Delete group">🗑</button>`;
+  html += `</div>`;
   if (children.length > 0) {
     html += `<div class="parent-section-children" data-children-container="${section.id}">`;
     children.forEach(child => {
@@ -1190,24 +1246,26 @@ function renderParentSectionHTML(section, tripId, isReturn) {
   return html;
 }
 
-function renderItemHTML(item, sectionId, tripId, idx) {
+function renderItemHTML(item, sectionId, tripId, idx, sectionType) {
   const itemNum = idx + 1;
   const fields = item.fields || [];
   const titleText = item.title || '';
-  const displayTitle = titleText || `Entry ${itemNum}`;
+  const prefix = ENTRY_TITLE_PREFIXES[sectionType] || 'Entry';
+  const displayTitle = titleText || `${prefix} ${itemNum}`;
 
   let html = `<div class="item-card" data-item-id="${item.id}">`;
   html += `<div class="item-card-header">`;
   html += `<span class="item-drag-handle" data-item-drag>⠿</span>`;
   html += `<span class="item-card-title" contenteditable="true" data-item-title="${item.id}" data-item-section="${sectionId}" data-item-trip="${tripId}" title="Click to rename">${esc(displayTitle)}</span>`;
-  html += `<div class="item-card-actions">`;
+  html += `</div>`; // item-card-header
+
+  html += `<div class="item-body-controls">`;
   html += `<button class="btn-icon btn-sm" data-add-field="${item.id}" data-field-section="${sectionId}" data-field-trip="${tripId}" title="Add field">+ Field</button>`;
   html += `<button class="btn-icon btn-sm" data-export-item="${item.id}" data-item-section="${sectionId}" data-item-trip="${tripId}" title="Export entry">${ICON_DN}</button>`;
   html += `<button class="btn-icon btn-sm" data-import-entry="${sectionId}" data-entry-trip="${tripId}" title="Import entry from file">${ICON_UP}</button>`;
   html += `<button class="btn-icon btn-sm" data-share-item="${item.id}" data-share-section="${sectionId}" data-share-trip="${tripId}" title="Share entry">${ICON_SHARE}</button>`;
   html += `<button class="btn-icon btn-sm danger" data-delete-item="${item.id}" data-item-section="${sectionId}" data-item-trip="${tripId}" title="Delete entry">🗑</button>`;
   html += `</div>`;
-  html += `</div>`; // item-card-header
 
   html += `<div class="item-fields" data-fields-container="${item.id}" data-fields-section="${sectionId}" data-fields-trip="${tripId}">`;
   fields.forEach(field => {
@@ -1227,9 +1285,6 @@ function renderItemHTML(item, sectionId, tripId, idx) {
     html += `</div>`;
   });
   html += `</div>`; // item-fields
-
-  html += `<div class="item-footer">`;
-  html += `</div>`;
 
   html += `</div>`; // item-card
   return html;
@@ -1317,6 +1372,24 @@ function attachTripDetailEvents(trip) {
       });
     });
   }
+
+  // Destinations strip chip clicks
+  document.querySelectorAll('[data-strip-dest]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const destId = chip.dataset.stripDest;
+      const panel = document.getElementById('dest-strip-panel-' + destId);
+      if (!panel) return;
+      const isOpen = panel.classList.toggle('open');
+      chip.classList.toggle('active', isOpen);
+      // Close other panels
+      document.querySelectorAll('.dest-strip-panel').forEach(p => {
+        if (p !== panel) { p.classList.remove('open'); }
+      });
+      document.querySelectorAll('[data-strip-dest]').forEach(c => {
+        if (c !== chip) c.classList.remove('active');
+      });
+    });
+  });
 
   // Blank slate buttons
   const btnBlankSection = el('btn-blank-add-section');
@@ -1413,6 +1486,16 @@ function attachSectionEvents(trip) {
         if (sec) sec.expanded = section.classList.contains('expanded');
       }
       save();
+    });
+  });
+
+  // Section / group title text click → open rename modal
+  content.querySelectorAll('[data-section-title-text]').forEach(span => {
+    span.addEventListener('click', e => {
+      e.stopPropagation();
+      const sectionId = span.dataset.sectionTitleText;
+      const renameBtn = content.querySelector(`[data-rename-section="${sectionId}"]`);
+      if (renameBtn) renameBtn.click();
     });
   });
 
@@ -2305,6 +2388,7 @@ function openAddSection(tripId, isReturn, parentId) {
   // Build grid — exclude 'parent' type (parent sections added via separate modal)
   const grid = document.getElementById('section-type-grid');
   grid.innerHTML = '';
+  const gridFrag = document.createDocumentFragment();
   Object.entries(SECTION_TEMPLATES).forEach(([key, tmpl]) => {
     if (key === 'parent') return; // parent sections added separately
     const card = document.createElement('div');
@@ -2355,8 +2439,9 @@ function openAddSection(tripId, isReturn, parentId) {
         customizeGroup.hidden = true;
       }
     });
-    grid.appendChild(card);
+    gridFrag.appendChild(card);
   });
+  grid.appendChild(gridFrag);
 
   document.getElementById('section-customize-group').hidden = true;
   document.getElementById('f-section-title').value = '';
