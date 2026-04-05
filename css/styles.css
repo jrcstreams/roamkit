@@ -165,7 +165,7 @@ body {
 .sidebar-header-btns {
   display: flex;
   align-items: center;
-  gap: .25rem;
+  gap: .65rem;
 }
 
 .sidebar-btn {
@@ -942,14 +942,15 @@ body {
 }
 
 .trip-close-btn {
-  color: var(--text-light);
-  padding: .32rem .42rem;
-  border-radius: var(--radius-sm);
-  margin-left: .1rem;
+  margin-left: .25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
 }
 .trip-close-btn:hover {
   background: var(--danger-light) !important;
   color: var(--danger) !important;
+  border-color: #fca5a5 !important;
 }
 
 /* Control icon size */
@@ -1173,6 +1174,19 @@ body {
   font-size: .85rem;
   color: var(--text);
   display: block;
+}
+.trip-dest-group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .18rem;
+  font-size: .67rem;
+  font-weight: 500;
+  color: var(--primary);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 3px;
+  padding: .05rem .32rem;
+  margin-top: .18rem;
 }
 .trip-dest-dates {
   font-size: .73rem;

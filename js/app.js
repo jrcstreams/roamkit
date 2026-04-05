@@ -8,9 +8,9 @@ const ICON_UP = `<svg class="si" viewBox="0 0 10 11" fill="none" stroke="current
 const ICON_SHARE = `<svg class="si" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="2" r="1.5"/><circle cx="8.5" cy="9" r="1.5"/><circle cx="2" cy="5.5" r="1.5"/><line x1="3.5" y1="6.3" x2="7" y2="8.3"/><line x1="7" y1="2.7" x2="3.5" y2="4.7"/></svg>`;
 
 // Trip control panel SVG icons
-const ICON_CTRL_EXPAND   = `<svg class="ci" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,3.5 1,1 3.5,1"/><polyline points="6.5,1 9,1 9,3.5"/><polyline points="9,6.5 9,9 6.5,9"/><polyline points="3.5,9 1,9 1,6.5"/></svg>`;
+const ICON_CTRL_EXPAND   = `<svg class="ci" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="2.5" x2="9" y2="2.5"/><line x1="1" y1="5" x2="9" y2="5"/><polyline points="3.5,7.5 5,9.5 6.5,7.5"/></svg>`;
 const ICON_CTRL_ITINERARY = `<svg class="ci" viewBox="0 0 10 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="8" height="8.5" rx="1.5"/><line x1="3.5" y1="1" x2="3.5" y2="3.5"/><line x1="6.5" y1="1" x2="6.5" y2="3.5"/><line x1="2.5" y1="5.5" x2="7.5" y2="5.5"/><line x1="2.5" y1="7.5" x2="5.5" y2="7.5"/></svg>`;
-const ICON_CTRL_COLLAPSE = `<svg class="ci" viewBox="0 0 10 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,3 5,5.5 8,3"/><polyline points="2,9 5,6.5 8,9"/></svg>`;
+const ICON_CTRL_COLLAPSE = `<svg class="ci" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3.5,2.5 5,.5 6.5,2.5"/><line x1="1" y1="5" x2="9" y2="5"/><line x1="1" y1="7.5" x2="9" y2="7.5"/></svg>`;
 const ICON_CTRL_RETURN   = `<svg class="ci" viewBox="0 0 13 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2,4.5 H8.5 Q12,4.5 12,7.5 Q12,10.5 8.5,10.5 H4.5" transform="translate(0,-1)"/><polyline points="4,2 2,4.5 4,7" transform="translate(0,-0.5)"/></svg>`;
 const ICON_CTRL_CLOSE    = `<svg class="ci" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="8.5" y2="8.5"/><line x1="8.5" y1="1.5" x2="1.5" y2="8.5"/></svg>`;
 
@@ -188,6 +188,7 @@ const state = {
   movingTripId: null,
   addSectionContext: null,
   addDestSectionContext: null,
+  pendingDestGroupId: null,
   addFieldContext: null,
   selectedSectionTypes: new Set(),
   pendingImportData: null,
@@ -458,6 +459,7 @@ function openModal(id) {
 function closeModal(id) {
   const el = document.getElementById(id);
   if (el) el.hidden = true;
+  if (id === 'modal-dest') state.pendingDestGroupId = null;
 }
 
 function wireModals() {
@@ -523,7 +525,7 @@ function renderSidebar() {
   // Deleted trips section
   if (state.deletedTrips.length > 0) {
     const delSection = body.querySelector('.deleted-trips-section');
-    const isCollapsed = delSection ? delSection.classList.contains('collapsed') : false;
+    const isCollapsed = delSection ? delSection.classList.contains('collapsed') : true;
     html += `<div class="deleted-trips-section ${isCollapsed ? 'collapsed' : ''}">`;
     html += `<div class="deleted-trips-header">`;
     html += `<span class="deleted-trips-label">Recently Deleted</span>`;
@@ -938,7 +940,7 @@ function renderTripDetail() {
   html += `<button class="btn-secondary btn-sm" id="btn-edit-trip">✎ Edit</button>`;
   html += `<button class="btn-secondary btn-sm" id="btn-export-trip">${ICON_DN} Export</button>`;
   html += `<button class="btn-secondary btn-sm" id="btn-share-trip">${ICON_SHARE} Share</button>`;
-  html += `<button class="btn-icon trip-close-btn" id="btn-close-trip" title="Close trip">${ICON_CTRL_CLOSE}</button>`;
+  html += `<button class="btn-secondary btn-sm trip-close-btn" id="btn-close-trip" title="Close trip">${ICON_CTRL_CLOSE} Close</button>`;
   html += `</div>`;
   html += `</div>`; // trip-header-top
 
@@ -1093,13 +1095,14 @@ function collectTripDestinations(trip) {
   return dests;
 }
 
-function renderTripDestRowHTML(dest) {
+function renderTripDestRowHTML(dest, groupName) {
   const q = dest.country ? `${dest.name}, ${dest.country}` : dest.name;
   const label = [dest.name, dest.country].filter(Boolean).join(', ');
   let html = `<div class="trip-dest-row" data-dest-id="${dest.id}">`;
   html += `<div class="trip-dest-row-main">`;
   html += `<div class="trip-dest-row-info">`;
   html += `<span class="trip-dest-name">${esc(label)}</span>`;
+  if (groupName) html += `<span class="trip-dest-group-badge">${esc(groupName)}</span>`;
   if (dest.startDate || dest.endDate) {
     const ds = fmtDate(dest.startDate);
     const de = fmtDate(dest.endDate);
@@ -1147,7 +1150,10 @@ function renderTripDestinationsSection(trip) {
   html += `<div class="trip-dests-body">`;
   if (dests.length > 0) {
     html += `<div class="trip-dests-list" id="trip-dests-list">`;
-    dests.forEach(dest => { html += renderTripDestRowHTML(dest); });
+    dests.forEach(dest => {
+      const groupName = dest.groupId ? (getSection(trip, dest.groupId) || {}).title || null : null;
+      html += renderTripDestRowHTML(dest, groupName);
+    });
     html += `</div>`;
   } else {
     html += `<div class="trip-dests-list" id="trip-dests-list"></div>`;
@@ -1282,6 +1288,7 @@ function renderParentSectionHTML(section, tripId, isReturn) {
   html += `<div class="parent-section-footer">`;
   html += `<button class="btn-ghost" data-add-child-section="${section.id}" data-parent-trip="${tripId}">+ Add Subsection</button>`;
   html += `<button class="btn-ghost" data-add-child-group="${section.id}" data-parent-trip="${tripId}">+ Add Subgroup</button>`;
+  html += `<button class="btn-ghost" data-add-group-dest="${section.id}" data-parent-trip="${tripId}">📍 Add Destination</button>`;
   html += `<button class="btn-import-section btn-import-child" data-import-parent="${section.id}" data-parent-trip="${tripId}">${ICON_UP} Import</button>`;
   html += `</div>`;
   html += `</div>`; // parent-section-body
@@ -1536,6 +1543,23 @@ function attachTripDetailEvents(trip) {
       btn.addEventListener('click', () => {
         state.addDestSectionContext = { tripId: btn.dataset.destTrip, sectionId: btn.dataset.addSectionDest };
         state.editingDestId = null;
+        document.getElementById('modal-dest-title').textContent = 'Add Destination';
+        document.getElementById('f-dest-name').value = '';
+        document.getElementById('f-dest-country').value = '';
+        document.getElementById('f-dest-start').value = '';
+        document.getElementById('f-dest-end').value = '';
+        document.getElementById('f-dest-notes').value = '';
+        openModal('modal-dest');
+        setTimeout(() => document.getElementById('f-dest-name').focus(), 50);
+      });
+    });
+
+    // Group destination add buttons
+    tripContent.querySelectorAll('[data-add-group-dest]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.pendingDestGroupId = btn.dataset.addGroupDest;
+        state.editingDestId = null;
+        state.addDestSectionContext = null;
         document.getElementById('modal-dest-title').textContent = 'Add Destination';
         document.getElementById('f-dest-name').value = '';
         document.getElementById('f-dest-country').value = '';
@@ -2540,9 +2564,15 @@ function saveDest() {
     }
     state.addDestSectionContext = null;
   } else {
-    // Add to trip.destinations
+    // Add to trip.destinations (possibly from a group)
     trip.destinations = trip.destinations || [];
-    trip.destinations.push({ id: uid(), ...destData });
+    const newDest = { id: uid(), ...destData };
+    if (state.pendingDestGroupId) {
+      newDest.groupId = state.pendingDestGroupId;
+      state.pendingDestGroupId = null;
+    }
+    trip.destinations.push(newDest);
+    trip.destsExpanded = true;
   }
 
   trip.updatedAt = new Date().toISOString();
