@@ -1083,29 +1083,58 @@ function collectTripDestinations(trip) {
   return dests;
 }
 
-function renderTripDestRowHTML(dest, groupName) {
+function renderTripDestRowHTML(dest, groupName, expanded) {
   const q = dest.country ? `${dest.name}, ${dest.country}` : dest.name;
-  const label = [dest.name, dest.country].filter(Boolean).join(', ');
-  let html = `<div class="trip-dest-row" data-dest-id="${dest.id}">`;
-  html += `<div class="trip-dest-row-main">`;
-  html += `<div class="trip-dest-row-info">`;
+  const label = [dest.name, dest.country].filter(Boolean).join(', ') || 'Unnamed Destination';
+  const expandedClass = expanded ? ' expanded' : '';
+
+  let html = `<div class="trip-dest-row${expandedClass}" data-dest-id="${dest.id}">`;
+
+  // Header (clickable)
+  html += `<div class="trip-dest-row-header" data-tdest-toggle="${dest.id}">`;
+  html += `<span class="trip-dest-row-icon">📍</span>`;
+  html += `<div class="trip-dest-row-meta">`;
   html += `<span class="trip-dest-name">${esc(label)}</span>`;
   if (groupName) html += `<span class="trip-dest-group-badge">${esc(groupName)}</span>`;
   if (dest.startDate || dest.endDate) {
-    const ds = fmtDate(dest.startDate);
-    const de = fmtDate(dest.endDate);
-    let dStr = ds && de ? `${ds} – ${de}` : ds ? `From ${ds}` : `Until ${de}`;
+    const ds = fmtDate(dest.startDate), de = fmtDate(dest.endDate);
+    const dStr = ds && de ? `${ds} – ${de}` : ds ? `From ${ds}` : `Until ${de}`;
     html += `<span class="trip-dest-dates">${dStr}</span>`;
   }
-  if (dest.notes) html += `<div class="trip-dest-notes">${esc(dest.notes)}</div>`;
   html += `</div>`;
-  html += `<div class="trip-dest-row-actions">`;
-  html += `<button class="btn-icon btn-sm" data-tdest-toggle-res="${dest.id}" title="Travel resources">🔗</button>`;
-  html += `<button class="btn-icon btn-sm" data-edit-dest="${dest.id}" title="Edit">✎</button>`;
-  html += `<button class="btn-icon btn-sm danger" data-delete-dest="${dest.id}" title="Delete">🗑</button>`;
+  html += `<span class="trip-dest-row-chevron">▶</span>`;
+  html += `</div>`; // trip-dest-row-header
+
+  // Body (expandable)
+  html += `<div class="trip-dest-row-body" id="tdest-body-${dest.id}">`;
+
+  // Editable fields
+  html += `<div class="trip-dest-edit-fields">`;
+  html += `<div class="trip-dest-field-row">`;
+  html += `<span class="trip-dest-field-label">Place</span>`;
+  html += `<input type="text" class="trip-dest-field" data-tdest-field="${dest.id}" data-tdest-key="name" value="${esc(dest.name || '')}">`;
   html += `</div>`;
+  html += `<div class="trip-dest-field-row">`;
+  html += `<span class="trip-dest-field-label">Country</span>`;
+  html += `<input type="text" class="trip-dest-field" data-tdest-field="${dest.id}" data-tdest-key="country" value="${esc(dest.country || '')}">`;
   html += `</div>`;
-  html += `<div class="trip-dest-resources" id="tdest-res-${dest.id}">`;
+  html += `<div class="trip-dest-field-row">`;
+  html += `<span class="trip-dest-field-label">Arrival</span>`;
+  html += `<input type="date" class="trip-dest-field" data-tdest-field="${dest.id}" data-tdest-key="startDate" value="${esc(dest.startDate || '')}">`;
+  html += `</div>`;
+  html += `<div class="trip-dest-field-row">`;
+  html += `<span class="trip-dest-field-label">Departure</span>`;
+  html += `<input type="date" class="trip-dest-field" data-tdest-field="${dest.id}" data-tdest-key="endDate" value="${esc(dest.endDate || '')}">`;
+  html += `</div>`;
+  html += `<div class="trip-dest-field-row trip-dest-field-full">`;
+  html += `<span class="trip-dest-field-label">Notes</span>`;
+  html += `<textarea class="trip-dest-field" data-tdest-field="${dest.id}" data-tdest-key="notes">${esc(dest.notes || '')}</textarea>`;
+  html += `</div>`;
+  html += `</div>`; // trip-dest-edit-fields
+
+  // Travel resources
+  html += `<div class="trip-dest-resources-section">`;
+  html += `<div class="trip-dest-resources-label">Travel Resources</div>`;
   html += `<div class="dest-links-grid">`;
   WEB_LINKS.forEach(link => {
     html += `<a href="${link.url(q)}" target="_blank" rel="noopener noreferrer" class="dest-link-card">`;
@@ -1113,41 +1142,37 @@ function renderTripDestRowHTML(dest, groupName) {
     html += `<span class="dest-link-name">${esc(link.name)}</span>`;
     html += `</a>`;
   });
-  html += `</div></div></div>`;
+  html += `</div>`;
+  html += `</div>`; // trip-dest-resources-section
+
+  // Controls
+  html += `<div class="trip-dest-row-controls">`;
+  html += `<button class="btn-icon btn-sm danger" data-delete-dest="${dest.id}" title="Delete destination">🗑 Delete</button>`;
+  html += `</div>`;
+
+  html += `</div>`; // trip-dest-row-body
+  html += `</div>`; // trip-dest-row
   return html;
 }
 
 function renderTripDestinationsSection(trip) {
   const dests = collectTripDestinations(trip);
-  const isExpanded = dests.length > 0 ? (trip.destsExpanded !== false) : false;
+  const isExpanded = trip.destsExpanded === true;
   const expandedClass = isExpanded ? 'expanded' : '';
   let html = `<div class="trip-dests-accordion ${expandedClass}" id="trip-dests-accordion" data-trip-id="${trip.id}">`;
   html += `<div class="trip-dests-header" id="trip-dests-header">`;
   html += `<span class="trip-dests-icon">📍</span>`;
   html += `<span class="trip-dests-title">Trip Destinations</span>`;
-  if (dests.length > 0) html += `<span class="trip-dests-count">${dests.length} ${dests.length === 1 ? 'place' : 'places'}</span>`;
   html += `<span class="trip-dests-chevron">▶</span>`;
   html += `</div>`; // trip-dests-header
   html += `<div class="trip-dests-body">`;
-  if (dests.length > 0) {
-    html += `<div class="trip-dests-list" id="trip-dests-list">`;
-    dests.forEach(dest => {
-      const groupName = dest.groupId ? (getSection(trip, dest.groupId) || {}).title || null : null;
-      html += renderTripDestRowHTML(dest, groupName);
-    });
-    html += `</div>`;
-  } else {
-    html += `<div class="trip-dests-list" id="trip-dests-list"></div>`;
-  }
-  html += `<div class="trip-dests-add-form">`;
-  html += `<div class="trip-dests-add-inputs">`;
-  html += `<input type="text" class="trip-dest-input" id="new-dest-name" placeholder="City / Place">`;
-  html += `<input type="text" class="trip-dest-input" id="new-dest-country" placeholder="Country">`;
-  html += `<input type="date" class="trip-dest-input trip-dest-input-date" id="new-dest-start" title="Arrival date">`;
-  html += `<input type="date" class="trip-dest-input trip-dest-input-date" id="new-dest-end" title="Departure date">`;
+  html += `<div class="trip-dests-list" id="trip-dests-list">`;
+  dests.forEach(dest => {
+    const groupName = dest.groupId ? (getSection(trip, dest.groupId) || {}).title || null : null;
+    html += renderTripDestRowHTML(dest, groupName, false);
+  });
   html += `</div>`;
-  html += `<button class="btn-primary btn-sm" id="btn-trip-dest-add" data-trip="${trip.id}">+ Add</button>`;
-  html += `</div>`; // trip-dests-add-form
+  html += `<button class="btn-ghost" id="btn-trip-dest-add-ghost" data-trip="${trip.id}">+ Add Destination</button>`;
   html += `</div>`; // trip-dests-body
   html += `</div>`; // trip-dests-accordion
   return html;
@@ -1238,7 +1263,6 @@ function renderGroupDestinationsHTML(section, tripId) {
   html += `<div class="group-dests-header">`;
   html += `<span class="group-dests-icon">📍</span>`;
   html += `<span class="group-dests-title">Group Destinations</span>`;
-  if (dests.length > 0) html += `<span class="trip-dests-count">${dests.length} ${dests.length === 1 ? 'place' : 'places'}</span>`;
   html += `</div>`;
   if (dests.length > 0) {
     dests.forEach(dest => {
@@ -1354,6 +1378,13 @@ function renderItemHTML(item, sectionId, tripId, idx, sectionType, sectionTitle)
     html += `</div>`;
     if (isTextarea) {
       html += `<textarea class="field-input" rows="2" data-field-input="${field.id}" data-item-id="${item.id}" data-section-id="${sectionId}" data-trip-id="${tripId}">${esc(field.value || '')}</textarea>`;
+    } else if (field.type === 'date' || field.type === 'time' || field.type === 'datetime-local') {
+      const ph = field.type === 'date' ? 'Add date' : field.type === 'time' ? 'Add time' : 'Add date & time';
+      const hasVal = field.value ? ' has-value' : '';
+      html += `<div class="date-input-wrapper${hasVal}">`;
+      html += `<input type="${esc(field.type)}" class="field-input date-input" value="${esc(field.value || '')}" data-field-input="${field.id}" data-item-id="${item.id}" data-section-id="${sectionId}" data-trip-id="${tripId}">`;
+      html += `<span class="date-placeholder">${ph}</span>`;
+      html += `</div>`;
     } else {
       html += `<input type="${esc(field.type)}" class="field-input" value="${esc(field.value || '')}" data-field-input="${field.id}" data-item-id="${item.id}" data-section-id="${sectionId}" data-trip-id="${tripId}">`;
     }
@@ -1443,7 +1474,6 @@ function renderItinDays(items) {
       html += `<span class="itin-section-name">${esc(item.sectionTitle)}</span>`;
       if (item.groupLabel) html += `<span class="itin-group-label">${esc(item.groupLabel)}</span>`;
       html += `</div>`;
-      html += `<div class="itin-entry-title">${esc(item.title)}</div>`;
       const shownFields = item.fields.filter(f => f.value && f.label !== 'Notes');
       if (shownFields.length) {
         html += `<div class="itin-fields">`;
@@ -1798,54 +1828,57 @@ function attachTripDetailEvents(trip) {
     });
   }
 
-  // Trip Destinations add inline
-  const btnTripDestAdd = document.getElementById('btn-trip-dest-add');
-  if (btnTripDestAdd) {
-    btnTripDestAdd.addEventListener('click', () => {
-      const nameEl = document.getElementById('new-dest-name');
-      const countryEl = document.getElementById('new-dest-country');
-      const startEl = document.getElementById('new-dest-start');
-      const endEl = document.getElementById('new-dest-end');
-      const name = nameEl ? nameEl.value.trim() : '';
-      const country = countryEl ? countryEl.value.trim() : '';
-      if (!name && !country) { nameEl && nameEl.focus(); return; }
-      const t = getTrip(trip.id);
-      if (!t) return;
-      t.destinations = t.destinations || [];
-      t.destinations.push({
-        id: uid(), name, country,
-        startDate: startEl ? startEl.value : '',
-        endDate: endEl ? endEl.value : '',
-        notes: ''
-      });
-      t.destsExpanded = true;
-      t.updatedAt = new Date().toISOString();
-      save();
-      renderTripDetail();
-    });
-    // Allow Enter key on inputs to add
-    ['new-dest-name','new-dest-country','new-dest-start','new-dest-end'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') btnTripDestAdd.click(); });
-    });
+  // Trip Destinations ghost add button
+  const btnTripDestAddGhost = document.getElementById('btn-trip-dest-add-ghost');
+  if (btnTripDestAddGhost) {
+    btnTripDestAddGhost.addEventListener('click', () => openAddDest(trip.id));
   }
 
-  // Trip Destinations resource toggle
-  document.querySelectorAll('[data-tdest-toggle-res]').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const destId = btn.dataset.tdestToggleRes;
-      const panel = document.getElementById('tdest-res-' + destId);
-      if (!panel) return;
-      const isOpen = panel.classList.toggle('open');
-      btn.style.color = isOpen ? 'var(--primary)' : '';
-      // close other panels
-      document.querySelectorAll('.trip-dest-resources').forEach(p => {
-        if (p !== panel) { p.classList.remove('open'); }
-      });
-      document.querySelectorAll('[data-tdest-toggle-res]').forEach(b => {
-        if (b !== btn) b.style.color = '';
-      });
+  // Trip Destinations accordion: toggle individual dest rows
+  document.querySelectorAll('[data-tdest-toggle]').forEach(header => {
+    header.addEventListener('click', e => {
+      if (e.target.closest('input, textarea, a, button')) return;
+      const destId = header.dataset.tdestToggle;
+      const row = header.closest('.trip-dest-row');
+      if (row) row.classList.toggle('expanded');
+    });
+  });
+
+  // Trip Destinations inline field save (no re-render)
+  document.querySelectorAll('[data-tdest-field]').forEach(input => {
+    input.addEventListener('change', () => {
+      const destId = input.dataset.tdestField;
+      const key = input.dataset.tdestKey;
+      const t = getTrip(trip.id);
+      if (!t) return;
+      const dest = collectTripDestinations(t).find(d => d.id === destId);
+      if (!dest) return;
+      dest[key] = input.value;
+      // Update the visible name in the header
+      if (key === 'name' || key === 'country') {
+        const nameEl = document.querySelector(`.trip-dest-row[data-dest-id="${destId}"] .trip-dest-name`);
+        if (nameEl) {
+          const label = [dest.name, dest.country].filter(Boolean).join(', ') || 'Unnamed Destination';
+          nameEl.textContent = label;
+        }
+      }
+      if (key === 'startDate' || key === 'endDate') {
+        const metaEl = document.querySelector(`.trip-dest-row[data-dest-id="${destId}"] .trip-dest-row-meta`);
+        if (metaEl) {
+          const ds = fmtDate(dest.startDate), de = fmtDate(dest.endDate);
+          const dStr = ds && de ? `${ds} – ${de}` : ds ? `From ${ds}` : de ? `Until ${de}` : '';
+          let datesEl = metaEl.querySelector('.trip-dest-dates');
+          if (dStr && !datesEl) {
+            datesEl = document.createElement('span');
+            datesEl.className = 'trip-dest-dates';
+            metaEl.appendChild(datesEl);
+          }
+          if (datesEl) datesEl.textContent = dStr;
+          if (!dStr && datesEl) datesEl.remove();
+        }
+      }
+      t.updatedAt = new Date().toISOString();
+      save();
     });
   });
 
@@ -2280,6 +2313,13 @@ function attachSectionEvents(trip) {
         input.dataset.tripId,
         input.value
       );
+      // manage date/time placeholder visibility
+      const wrapper = input.closest('.date-input-wrapper');
+      if (wrapper) wrapper.classList.toggle('has-value', !!input.value);
+    });
+    input.addEventListener('change', () => {
+      const wrapper = input.closest('.date-input-wrapper');
+      if (wrapper) wrapper.classList.toggle('has-value', !!input.value);
     });
   });
 }

@@ -816,8 +816,10 @@ body {
   background: var(--bg-card);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
 }
 
 .trip-color-accent {
@@ -1151,18 +1153,7 @@ body {
 .trip-dests-accordion.expanded .trip-dests-header { border-bottom-color: var(--border); }
 
 .trip-dests-icon { font-size: 1rem; flex-shrink: 0; }
-.trip-dests-title { font-weight: 700; font-size: .88rem; color: var(--text); flex-shrink: 0; }
-.trip-dests-count {
-  font-size: .72rem;
-  color: var(--text-light);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: .1rem .5rem;
-  font-weight: 500;
-  flex: 1;
-}
-
+.trip-dests-title { font-weight: 700; font-size: .88rem; color: var(--text); flex: 1; }
 .trip-dests-chevron {
   color: var(--text-light);
   font-size: .65rem;
@@ -1174,25 +1165,38 @@ body {
 .trip-dests-body { display: none; padding: .75rem 1rem 1rem; }
 .trip-dests-accordion.expanded .trip-dests-body { display: block; }
 
-/* Destination rows */
+/* Destination rows — accordion/card hybrid */
 .trip-dest-row {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   margin-bottom: .5rem;
+  background: white;
   overflow: hidden;
 }
-.trip-dest-row-main {
+.trip-dest-row-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: .5rem;
-  padding: .5rem .65rem;
+  padding: .55rem .75rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s;
 }
-.trip-dest-row-info { flex: 1; min-width: 0; }
+.trip-dest-row-header:hover { background: #f9fafb; }
+.trip-dest-row.expanded .trip-dest-row-header {
+  background: #f9fafb;
+  border-bottom: 1px solid var(--border);
+}
+.trip-dest-row-icon { font-size: .85rem; flex-shrink: 0; }
+.trip-dest-row-meta { flex: 1; min-width: 0; }
 .trip-dest-name {
   font-weight: 600;
   font-size: .85rem;
   color: var(--text);
   display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .trip-dest-group-badge {
   display: inline-flex;
@@ -1205,51 +1209,92 @@ body {
   border: 1px solid #bfdbfe;
   border-radius: 3px;
   padding: .05rem .32rem;
-  margin-top: .18rem;
+  margin-top: .12rem;
 }
 .trip-dest-dates {
-  font-size: .73rem;
+  font-size: .72rem;
   color: var(--text-muted);
   display: block;
-  margin-top: .08rem;
+  margin-top: .05rem;
 }
-.trip-dest-notes {
-  font-size: .75rem;
-  color: var(--text-muted);
-  margin-top: .2rem;
-  white-space: pre-wrap;
+.trip-dest-row-chevron {
+  color: var(--text-light);
+  font-size: .58rem;
+  transition: transform .2s;
+  flex-shrink: 0;
 }
-.trip-dest-row-actions { display: flex; gap: .15rem; flex-shrink: 0; }
+.trip-dest-row.expanded .trip-dest-row-chevron { transform: rotate(90deg); }
 
-.trip-dest-resources {
+.trip-dest-row-body {
   display: none;
-  padding: .5rem .65rem .65rem;
-  border-top: 1px solid var(--border);
-  background: #f9fafb;
+  padding: .9rem 1rem 1rem;
 }
-.trip-dest-resources.open { display: block; }
-.trip-dest-resources .dest-links-grid {
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  padding: .35rem 0 0 0;
+.trip-dest-row.expanded .trip-dest-row-body { display: block; }
+
+/* Inline editable fields inside destination body */
+.trip-dest-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: .45rem;
+  margin-bottom: .9rem;
+}
+.trip-dest-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: .18rem;
+}
+.trip-dest-field-row.trip-dest-field-full { grid-column: 1 / -1; }
+.trip-dest-field-label {
+  font-size: .67rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.trip-dest-field {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .3rem .5rem;
+  font-size: .84rem;
+  color: var(--text);
+  background: white;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color .15s, box-shadow .15s;
+}
+.trip-dest-field:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(26,86,219,.1);
+}
+textarea.trip-dest-field { resize: vertical; min-height: 54px; }
+
+/* Travel resources section inside destination body */
+.trip-dest-resources-section { margin-bottom: .7rem; }
+.trip-dest-resources-label {
+  font-size: .67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+  margin-bottom: .4rem;
+}
+.trip-dest-resources-section .dest-links-grid {
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  padding: 0;
 }
 
-/* Add Destination inline form */
-.trip-dests-add-form {
+/* Destination body controls (delete, etc.) */
+.trip-dest-row-controls {
   display: flex;
-  align-items: flex-end;
   gap: .5rem;
-  flex-wrap: wrap;
-  padding-top: .5rem;
+  padding-top: .65rem;
   border-top: 1px solid var(--border);
-  margin-top: .25rem;
+  margin-top: .3rem;
 }
-.trip-dests-add-inputs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .4rem;
-  flex: 1;
-  min-width: 0;
-}
+
+/* Input classes used in group destination inline form */
 .trip-dest-input {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -1300,7 +1345,6 @@ body {
 .itin-section-icon { font-size: .85rem; }
 .itin-section-name { font-size: .7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
 .itin-group-label { font-size: .7rem; color: var(--text-light); background: var(--bg); border-radius: 3px; padding: .05rem .3rem; }
-.itin-entry-title { font-weight: 600; font-size: .88rem; color: var(--text); margin-bottom: .3rem; }
 .itin-fields { display: flex; flex-wrap: wrap; gap: .3rem .65rem; }
 .itin-field { display: flex; align-items: baseline; gap: .25rem; font-size: .78rem; }
 .itin-field-label { font-weight: 600; color: var(--text-muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; }
@@ -1637,7 +1681,7 @@ body {
 .item-body-controls:focus-within .btn-icon { opacity: 1; }
 
 .item-fields {
-  padding: .65rem .7rem .7rem .7rem;
+  padding: .65rem .7rem .7rem 1.4rem;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: .55rem;
@@ -1654,7 +1698,7 @@ body {
 
 .field-drag-handle {
   position: absolute;
-  left: -14px;
+  left: -16px;
   top: 3px;
   cursor: grab;
   color: var(--text-light);
@@ -1702,6 +1746,28 @@ body {
 }
 .field-group:hover .field-delete { opacity: 1; }
 .field-delete:hover { color: var(--danger); }
+
+/* ===== Date/Time Input Placeholder Wrapper ===== */
+.date-input-wrapper {
+  position: relative;
+  display: block;
+}
+.date-placeholder {
+  position: absolute;
+  left: .5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: .84rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity .1s;
+}
+.date-input-wrapper.has-value .date-placeholder,
+.date-input-wrapper .date-input:focus + .date-placeholder { opacity: 0; }
+.date-input-wrapper:not(.has-value) .date-input:not(:focus) { color: transparent; }
+.date-input-wrapper.has-value .date-input,
+.date-input-wrapper .date-input:focus { color: var(--text); }
 
 .field-input {
   width: 100%;
@@ -2314,7 +2380,7 @@ textarea { resize: vertical; }
   .parent-section-body { padding: .65rem .85rem; }
 
   .item-card-header { padding: .5rem .7rem; }
-  .item-fields { padding: .65rem; gap: .5rem; grid-template-columns: 1fr; }
+  .item-fields { padding: .65rem .65rem .65rem 1.4rem; gap: .5rem; grid-template-columns: 1fr; }
 
   /* Controls always fully visible on touch (no hover) */
   .section-body-controls .btn-icon,
