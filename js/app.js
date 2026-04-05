@@ -14,12 +14,6 @@ const ICON_CTRL_COLLAPSE = `<svg class="ci" viewBox="0 0 10 10" fill="none" stro
 const ICON_CTRL_RETURN   = `<svg class="ci" viewBox="0 0 13 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2,4.5 H8.5 Q12,4.5 12,7.5 Q12,10.5 8.5,10.5 H4.5" transform="translate(0,-1)"/><polyline points="4,2 2,4.5 4,7" transform="translate(0,-0.5)"/></svg>`;
 const ICON_CTRL_CLOSE    = `<svg class="ci" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="8.5" y2="8.5"/><line x1="8.5" y1="1.5" x2="1.5" y2="8.5"/></svg>`;
 
-const ENTRY_TITLE_PREFIXES = {
-  flights: 'Flight', car_rental: 'Rental', lodging: 'Stay',
-  restaurants: 'Restaurant', events: 'Event', transport: 'Leg',
-  activities: 'Activity', packing: 'Item', budget: 'Expense',
-  notes: 'Note', custom: 'Entry',
-};
 
 const COLOR_PRESETS = [
   '#1a56db', '#0e9f6e', '#d97706', '#e02424',
@@ -919,8 +913,7 @@ function renderTripDetail() {
 
   const outboundSections = trip.sections || [];
   const returnSections = trip.returnSections || [];
-  const hasLegacyDests = trip.destinations && trip.destinations.length > 0;
-  const isEmpty = outboundSections.length === 0 && returnSections.length === 0 && !hasLegacyDests && !trip.hasReturnTrip;
+  const isEmpty = outboundSections.length === 0 && returnSections.length === 0 && !trip.hasReturnTrip;
 
   let html = '';
 
@@ -947,8 +940,8 @@ function renderTripDetail() {
   // Control panel row
   html += `<div class="trip-control-panel">`;
   html += `<button class="trip-ctrl-btn trip-ctrl-primary" id="btn-add-section">+ Add Section</button>`;
-  html += `<button class="trip-ctrl-btn trip-ctrl-ghost" id="btn-add-parent-section">+ Group</button>`;
-  html += `<button class="trip-ctrl-btn trip-ctrl-ghost trip-ctrl-icon-btn" id="btn-itinerary" title="View itinerary">${ICON_CTRL_ITINERARY}<span class="ctrl-lbl">Itinerary</span></button>`;
+  html += `<button class="trip-ctrl-btn trip-ctrl-secondary" id="btn-add-parent-section">+ Group</button>`;
+  html += `<button class="trip-ctrl-btn trip-ctrl-itinerary trip-ctrl-icon-btn" id="btn-itinerary" title="View itinerary">${ICON_CTRL_ITINERARY}<span class="ctrl-lbl">View Itinerary</span></button>`;
   const hasExpandable = outboundSections.length > 1 || outboundSections.some(s => s.type === 'parent');
   if (hasExpandable) {
     html += `<span class="trip-ctrl-sep" aria-hidden="true"></span>`;
@@ -976,11 +969,6 @@ function renderTripDetail() {
     html += `<p>No sections yet. Use the controls above to start building your trip.</p>`;
     html += `</div>`;
   } else {
-    // Legacy destinations (top-level trip.destinations array)
-    if (hasLegacyDests) {
-      html += renderDestinationsHTML(trip);
-    }
-
     // Outbound sections
     if (outboundSections.length > 0) {
       html += `<div class="sections-list" id="sections-list">`;
@@ -1137,14 +1125,7 @@ function renderTripDestinationsSection(trip) {
   html += `<div class="trip-dests-header" id="trip-dests-header">`;
   html += `<span class="trip-dests-icon">📍</span>`;
   html += `<span class="trip-dests-title">Trip Destinations</span>`;
-  if (dests.length > 0) {
-    html += `<div class="trip-dests-chips">`;
-    dests.forEach(d => {
-      const lbl = [d.name, d.country].filter(Boolean).join(', ');
-      html += `<span class="trip-dest-chip-small">${esc(lbl)}</span>`;
-    });
-    html += `</div>`;
-  }
+  if (dests.length > 0) html += `<span class="trip-dests-count">${dests.length} ${dests.length === 1 ? 'place' : 'places'}</span>`;
   html += `<span class="trip-dests-chevron">▶</span>`;
   html += `</div>`; // trip-dests-header
   html += `<div class="trip-dests-body">`;
@@ -1202,7 +1183,7 @@ function renderSectionHTML(section, tripId, _isReturn) {
   if (items.length > 0) {
     html += `<div class="item-list" data-items-container="${section.id}">`;
     items.forEach((item, idx) => {
-      html += renderItemHTML(item, section.id, tripId, idx, section.type);
+      html += renderItemHTML(item, section.id, tripId, idx, section.type, section.title);
     });
     html += `</div>`;
   } else {
@@ -1251,6 +1232,41 @@ function renderSectionDestinationsHTML(section, tripId) {
   return html;
 }
 
+function renderGroupDestinationsHTML(section, tripId) {
+  const dests = section.groupDestinations || [];
+  let html = `<div class="group-dests-section" data-group-dests-id="${section.id}">`;
+  html += `<div class="group-dests-header">`;
+  html += `<span class="group-dests-icon">📍</span>`;
+  html += `<span class="group-dests-title">Group Destinations</span>`;
+  if (dests.length > 0) html += `<span class="trip-dests-count">${dests.length} ${dests.length === 1 ? 'place' : 'places'}</span>`;
+  html += `</div>`;
+  if (dests.length > 0) {
+    dests.forEach(dest => {
+      const label = [dest.name, dest.country].filter(Boolean).join(', ');
+      html += `<div class="group-dest-row" data-gdest-id="${dest.id}" data-gdest-group="${section.id}" data-gdest-trip="${tripId}">`;
+      html += `<span class="trip-dest-name">${esc(label)}</span>`;
+      if (dest.startDate || dest.endDate) {
+        const ds = fmtDate(dest.startDate), de = fmtDate(dest.endDate);
+        const dStr = ds && de ? `${ds} – ${de}` : ds ? `From ${ds}` : `Until ${de}`;
+        html += `<span class="trip-dest-dates">${dStr}</span>`;
+      }
+      html += `<div class="group-dest-row-actions">`;
+      html += `<button class="btn-icon btn-sm" data-edit-gdest="${dest.id}" data-gdest-group="${section.id}" data-gdest-trip="${tripId}" title="Edit">✎</button>`;
+      html += `<button class="btn-icon btn-sm danger" data-delete-gdest="${dest.id}" data-gdest-group="${section.id}" data-gdest-trip="${tripId}" title="Delete">🗑</button>`;
+      html += `</div></div>`;
+    });
+  }
+  html += `<div class="group-dests-add-form">`;
+  html += `<input type="text" class="trip-dest-input" data-gdest-name="${section.id}" placeholder="City / Place">`;
+  html += `<input type="text" class="trip-dest-input" data-gdest-country="${section.id}" placeholder="Country">`;
+  html += `<input type="date" class="trip-dest-input trip-dest-input-date" data-gdest-start="${section.id}" title="Arrival">`;
+  html += `<input type="date" class="trip-dest-input trip-dest-input-date" data-gdest-end="${section.id}" title="Departure">`;
+  html += `<button class="btn-primary btn-sm" data-gdest-add="${section.id}" data-gdest-trip="${tripId}">+ Add</button>`;
+  html += `</div>`;
+  html += `</div>`;
+  return html;
+}
+
 function renderParentSectionHTML(section, tripId, isReturn) {
   const expandedClass = section.expanded !== false ? 'expanded' : '';
   const children = section.children || [];
@@ -1265,13 +1281,22 @@ function renderParentSectionHTML(section, tripId, isReturn) {
   html += `<span class="parent-section-chevron">▶</span>`;
   html += `</div>`; // parent-section-header
 
+  const isSep = !!section.separateItinerary;
   html += `<div class="parent-section-body">`;
   html += `<div class="group-body-controls">`;
   html += `<button class="btn-icon btn-sm" data-export-section="${section.id}" data-export-trip="${tripId}" title="Export group">${ICON_DN}</button>`;
   html += `<button class="btn-icon btn-sm" data-share-section="${section.id}" data-share-trip="${tripId}" title="Share group">${ICON_SHARE}</button>`;
   html += `<button class="btn-icon btn-sm" data-rename-section="${section.id}" title="Rename group">✎</button>`;
   html += `<button class="btn-icon btn-sm danger" data-delete-section="${section.id}" data-section-trip="${tripId}" title="Delete group">🗑</button>`;
+  if (isSep) html += `<button class="trip-ctrl-btn trip-ctrl-itinerary trip-ctrl-icon-btn" data-view-group-itin="${section.id}" data-itin-trip="${tripId}" style="margin-left:auto">${ICON_CTRL_ITINERARY}<span>View Group Itinerary</span></button>`;
   html += `</div>`;
+  html += `<label class="group-sep-toggle">`;
+  html += `<input type="checkbox" data-group-sep="${section.id}" data-sep-trip="${tripId}"${isSep ? ' checked' : ''}>`;
+  html += `<span class="group-sep-label">Keep separate itinerary from main trip</span>`;
+  html += `</label>`;
+  if (isSep) {
+    html += renderGroupDestinationsHTML(section, tripId);
+  }
   if (children.length > 0) {
     html += `<div class="parent-section-children" data-children-container="${section.id}">`;
     children.forEach(child => {
@@ -1288,7 +1313,7 @@ function renderParentSectionHTML(section, tripId, isReturn) {
   html += `<div class="parent-section-footer">`;
   html += `<button class="btn-ghost" data-add-child-section="${section.id}" data-parent-trip="${tripId}">+ Add Subsection</button>`;
   html += `<button class="btn-ghost" data-add-child-group="${section.id}" data-parent-trip="${tripId}">+ Add Subgroup</button>`;
-  html += `<button class="btn-ghost" data-add-group-dest="${section.id}" data-parent-trip="${tripId}">📍 Add Destination</button>`;
+  if (!isSep) html += `<button class="btn-ghost" data-add-group-dest="${section.id}" data-parent-trip="${tripId}">📍 Add Destination</button>`;
   html += `<button class="btn-import-section btn-import-child" data-import-parent="${section.id}" data-parent-trip="${tripId}">${ICON_UP} Import</button>`;
   html += `</div>`;
   html += `</div>`; // parent-section-body
@@ -1297,12 +1322,11 @@ function renderParentSectionHTML(section, tripId, isReturn) {
   return html;
 }
 
-function renderItemHTML(item, sectionId, tripId, idx, sectionType) {
-  const itemNum = idx + 1;
+function renderItemHTML(item, sectionId, tripId, idx, sectionType, sectionTitle) {
   const fields = item.fields || [];
   const titleText = item.title || '';
-  const prefix = ENTRY_TITLE_PREFIXES[sectionType] || 'Entry';
-  const displayTitle = titleText || `${prefix} ${itemNum}`;
+  const baseTitle = sectionTitle || (SECTION_TEMPLATES[sectionType] || {}).title || 'Entry';
+  const displayTitle = titleText || `${baseTitle} entry`;
 
   let html = `<div class="item-card" data-item-id="${item.id}">`;
   html += `<div class="item-card-header">`;
@@ -1341,40 +1365,132 @@ function renderItemHTML(item, sectionId, tripId, idx, sectionType) {
   return html;
 }
 
-function buildItinerary(trip) {
+function buildItinerary(trip, opts) {
+  // opts: { groupSectionId } — if set, only return items from that group
   const DATE_TYPES = new Set(['date', 'datetime-local']);
   const TIME_TYPES = new Set(['time', 'datetime-local']);
-  const items = [];
-  function processSection(sec, groupLabel) {
+  const mainItems = [];
+  const separateGroups = {}; // groupId → { title, items[] }
+
+  function processSection(sec, groupLabel, parentSec) {
     if (sec.type === 'parent') {
-      (sec.children || []).forEach(child => processSection(child, sec.title));
+      if (opts && opts.groupSectionId) {
+        // Only process the specific group we're targeting
+        if (sec.id === opts.groupSectionId) {
+          (sec.children || []).forEach(child => processSection(child, sec.title, sec));
+        } else {
+          (sec.children || []).forEach(child => processSection(child, groupLabel, parentSec));
+        }
+      } else {
+        (sec.children || []).forEach(child => processSection(child, sec.title, sec));
+      }
       return;
     }
     if (sec.type === 'destinations') return;
-    (sec.items || []).forEach(item => {
+    (sec.items || []).forEach((item, itemIdx) => {
       const dateFields = (item.fields || []).filter(f => (DATE_TYPES.has(f.type) || TIME_TYPES.has(f.type)) && f.value);
       if (!dateFields.length) return;
       const sortField = dateFields.find(f => DATE_TYPES.has(f.type)) || dateFields[0];
-      items.push({
-        title: item.title || 'Untitled',
+      const baseTitle = sec.title || 'Entry';
+      const entry = {
+        title: item.title || `${baseTitle} entry`,
         sectionTitle: sec.title,
         sectionIcon: sec.icon || '',
         groupLabel: groupLabel || '',
         fields: item.fields || [],
-        sortKey: sortField.value
-      });
+        sortKey: sortField.value,
+        isSeparateGroup: !!(parentSec && parentSec.separateItinerary),
+        separateGroupTitle: parentSec ? parentSec.title : '',
+        separateGroupId: parentSec ? parentSec.id : ''
+      };
+      if (opts && opts.groupSectionId) {
+        mainItems.push(entry);
+      } else if (entry.isSeparateGroup) {
+        const gid = entry.separateGroupId;
+        if (!separateGroups[gid]) separateGroups[gid] = { title: entry.separateGroupTitle, items: [] };
+        separateGroups[gid].items.push(entry);
+      } else {
+        mainItems.push(entry);
+      }
     });
   }
-  (trip.sections || []).forEach(s => processSection(s, ''));
-  (trip.returnSections || []).forEach(s => processSection(s, '↩ Return'));
-  items.sort((a, b) => a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0);
-  return items;
+
+  (trip.sections || []).forEach(s => processSection(s, '', null));
+  (trip.returnSections || []).forEach(s => processSection(s, '↩ Return', null));
+  mainItems.sort((a, b) => a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0);
+  Object.values(separateGroups).forEach(g => g.items.sort((a, b) => a.sortKey < b.sortKey ? -1 : 1));
+  return { mainItems, separateGroups };
+}
+
+function renderItinDays(items) {
+  if (!items.length) return '';
+  const groups = {};
+  items.forEach(item => {
+    const dateKey = item.sortKey.slice(0, 10);
+    if (!groups[dateKey]) groups[dateKey] = [];
+    groups[dateKey].push(item);
+  });
+  let html = '';
+  Object.entries(groups).forEach(([dateKey, dayItems]) => {
+    const dateLabel = dateKey.length === 10 ? fmtDate(dateKey) : dateKey;
+    html += `<div class="itin-day">`;
+    html += `<div class="itin-day-label">${esc(dateLabel)}</div>`;
+    html += `<div class="itin-day-items">`;
+    dayItems.forEach(item => {
+      html += `<div class="itin-entry">`;
+      html += `<div class="itin-entry-header">`;
+      if (item.sectionIcon) html += `<span class="itin-section-icon">${item.sectionIcon}</span>`;
+      html += `<span class="itin-section-name">${esc(item.sectionTitle)}</span>`;
+      if (item.groupLabel) html += `<span class="itin-group-label">${esc(item.groupLabel)}</span>`;
+      html += `</div>`;
+      html += `<div class="itin-entry-title">${esc(item.title)}</div>`;
+      const shownFields = item.fields.filter(f => f.value && f.label !== 'Notes');
+      if (shownFields.length) {
+        html += `<div class="itin-fields">`;
+        shownFields.forEach(f => {
+          const val = (f.type === 'date') ? fmtDate(f.value) :
+                      (f.type === 'datetime-local') ? fmtDatetime(f.value) : f.value;
+          html += `<span class="itin-field"><span class="itin-field-label">${esc(f.label)}</span><span class="itin-field-val">${esc(val)}</span></span>`;
+        });
+        html += `</div>`;
+      }
+      html += `</div>`;
+    });
+    html += `</div></div>`;
+  });
+  return html;
+}
+
+function itinToText(items, label) {
+  let text = '';
+  const groups = {};
+  items.forEach(item => {
+    const dateKey = item.sortKey.slice(0, 10);
+    if (!groups[dateKey]) groups[dateKey] = [];
+    groups[dateKey].push(item);
+  });
+  Object.entries(groups).forEach(([dateKey, dayItems]) => {
+    const dateLabel = dateKey.length === 10 ? fmtDate(dateKey) : dateKey;
+    text += dateLabel + '\n' + '─'.repeat(dateLabel.length) + '\n';
+    dayItems.forEach(item => {
+      const icon = item.sectionIcon ? item.sectionIcon + ' ' : '';
+      text += `  ${icon}${item.sectionTitle} — ${item.title}\n`;
+      item.fields.filter(f => f.value && f.label !== 'Notes').forEach(f => {
+        const val = (f.type === 'date') ? fmtDate(f.value) :
+                    (f.type === 'datetime-local') ? fmtDatetime(f.value) : f.value;
+        text += `    ${f.label}: ${val}\n`;
+      });
+    });
+    text += '\n';
+  });
+  return text;
 }
 
 function openItinerary(tripId) {
   const trip = getTrip(tripId);
   if (!trip) return;
-  const items = buildItinerary(trip);
+  const { mainItems, separateGroups } = buildItinerary(trip);
+  const allMainItems = mainItems;
   const modal = document.getElementById('modal-itinerary');
   const titleEl = document.getElementById('modal-itinerary-title');
   const bodyEl = document.getElementById('itinerary-body');
@@ -1382,74 +1498,35 @@ function openItinerary(tripId) {
   if (!modal || !bodyEl) return;
   titleEl.textContent = trip.name + ' — Itinerary';
 
-  if (!items.length) {
+  const hasSepGroups = Object.keys(separateGroups).length > 0;
+  if (!allMainItems.length && !hasSepGroups) {
     bodyEl.innerHTML = `<div class="itinerary-empty"><p>No entries with dates or times found.</p><p class="itinerary-hint">Add date or time fields to section entries and they will appear here.</p></div>`;
   } else {
-    // Group by date
-    const groups = {};
-    items.forEach(item => {
-      const dateKey = item.sortKey.slice(0, 10);
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(item);
-    });
-    let html = '';
-    Object.entries(groups).forEach(([dateKey, groupItems]) => {
-      const dateLabel = dateKey.length === 10 ? fmtDate(dateKey) : dateKey;
-      html += `<div class="itin-day">`;
-      html += `<div class="itin-day-label">${esc(dateLabel)}</div>`;
-      html += `<div class="itin-day-items">`;
-      groupItems.forEach(item => {
-        html += `<div class="itin-entry">`;
-        html += `<div class="itin-entry-header">`;
-        if (item.sectionIcon) html += `<span class="itin-section-icon">${item.sectionIcon}</span>`;
-        html += `<span class="itin-section-name">${esc(item.sectionTitle)}</span>`;
-        if (item.groupLabel) html += `<span class="itin-group-label">${esc(item.groupLabel)}</span>`;
-        html += `</div>`;
-        html += `<div class="itin-entry-title">${esc(item.title)}</div>`;
-        const shownFields = item.fields.filter(f => f.value && f.label !== 'Notes');
-        if (shownFields.length) {
-          html += `<div class="itin-fields">`;
-          shownFields.forEach(f => {
-            const val = (f.type === 'date') ? fmtDate(f.value) :
-                        (f.type === 'datetime-local') ? fmtDatetime(f.value) : f.value;
-            html += `<span class="itin-field"><span class="itin-field-label">${esc(f.label)}</span><span class="itin-field-val">${esc(val)}</span></span>`;
-          });
-          html += `</div>`;
-        }
-        html += `</div>`;
-      });
-      html += `</div></div>`;
+    let html = renderItinDays(allMainItems);
+    if (!allMainItems.length && hasSepGroups) {
+      html += `<div class="itinerary-empty" style="padding:1rem 0"><p style="font-size:.85rem;color:var(--text-muted)">No main trip items with dates.</p></div>`;
+    }
+    // Separate group sections at bottom
+    Object.values(separateGroups).forEach(g => {
+      html += `<div class="itin-sep-group">`;
+      html += `<div class="itin-sep-group-label">📁 ${esc(g.title)}</div>`;
+      html += renderItinDays(g.items);
+      html += `</div>`;
     });
     bodyEl.innerHTML = html;
   }
 
-  // Wire share button
   if (shareBtn) {
     shareBtn.onclick = () => {
       let text = trip.name + ' — Itinerary\n';
       text += '='.repeat(trip.name.length + 14) + '\n\n';
-      if (!items.length) {
+      if (!allMainItems.length && !hasSepGroups) {
         text += 'No entries with dates or times found.\n';
       } else {
-        const groups = {};
-        items.forEach(item => {
-          const dateKey = item.sortKey.slice(0, 10);
-          if (!groups[dateKey]) groups[dateKey] = [];
-          groups[dateKey].push(item);
-        });
-        Object.entries(groups).forEach(([dateKey, groupItems]) => {
-          const dateLabel = dateKey.length === 10 ? fmtDate(dateKey) : dateKey;
-          text += dateLabel + '\n' + '─'.repeat(dateLabel.length) + '\n';
-          groupItems.forEach(item => {
-            const icon = item.sectionIcon ? item.sectionIcon + ' ' : '';
-            text += `  ${icon}${item.sectionTitle} — ${item.title}\n`;
-            item.fields.filter(f => f.value && f.label !== 'Notes').forEach(f => {
-              const val = (f.type === 'date') ? fmtDate(f.value) :
-                          (f.type === 'datetime-local') ? fmtDatetime(f.value) : f.value;
-              text += `    ${f.label}: ${val}\n`;
-            });
-          });
-          text += '\n';
+        text += itinToText(allMainItems, '');
+        Object.values(separateGroups).forEach(g => {
+          text += `\n── ${g.title} ──\n`;
+          text += itinToText(g.items, g.title);
         });
       }
       const shareTextArea = document.getElementById('share-text-area');
@@ -1457,6 +1534,46 @@ function openItinerary(tripId) {
       const shareHint = document.getElementById('modal-share-hint');
       if (shareTextArea && shareTitle) {
         shareTitle.textContent = 'Share Itinerary';
+        shareHint.textContent = 'Copy the itinerary below:';
+        shareTextArea.value = text;
+        closeModal('modal-itinerary');
+        openModal('modal-share');
+      }
+    };
+  }
+
+  openModal('modal-itinerary');
+}
+
+function openGroupItinerary(tripId, sectionId) {
+  const trip = getTrip(tripId);
+  if (!trip) return;
+  const sec = getSection(trip, sectionId);
+  if (!sec) return;
+  const { mainItems } = buildItinerary(trip, { groupSectionId: sectionId });
+  const modal = document.getElementById('modal-itinerary');
+  const titleEl = document.getElementById('modal-itinerary-title');
+  const bodyEl = document.getElementById('itinerary-body');
+  const shareBtn = document.getElementById('btn-share-itinerary');
+  if (!modal || !bodyEl) return;
+  titleEl.textContent = `${esc(sec.title)} — Group Itinerary`;
+
+  if (!mainItems.length) {
+    bodyEl.innerHTML = `<div class="itinerary-empty"><p>No entries with dates or times in this group.</p><p class="itinerary-hint">Add date or time fields to entries within this group.</p></div>`;
+  } else {
+    bodyEl.innerHTML = renderItinDays(mainItems);
+  }
+
+  if (shareBtn) {
+    shareBtn.onclick = () => {
+      let text = sec.title + ' — Group Itinerary\n';
+      text += '='.repeat(sec.title.length + 20) + '\n\n';
+      text += mainItems.length ? itinToText(mainItems, '') : 'No entries with dates or times.\n';
+      const shareTextArea = document.getElementById('share-text-area');
+      const shareTitle = document.getElementById('modal-share-title');
+      const shareHint = document.getElementById('modal-share-hint');
+      if (shareTextArea && shareTitle) {
+        shareTitle.textContent = 'Share Group Itinerary';
         shareHint.textContent = 'Copy the itinerary below:';
         shareTextArea.value = text;
         closeModal('modal-itinerary');
@@ -1554,7 +1671,7 @@ function attachTripDetailEvents(trip) {
       });
     });
 
-    // Group destination add buttons
+    // Group destination add buttons (adds to trip.destinations with groupId)
     tripContent.querySelectorAll('[data-add-group-dest]').forEach(btn => {
       btn.addEventListener('click', () => {
         state.pendingDestGroupId = btn.dataset.addGroupDest;
@@ -1566,6 +1683,102 @@ function attachTripDetailEvents(trip) {
         document.getElementById('f-dest-start').value = '';
         document.getElementById('f-dest-end').value = '';
         document.getElementById('f-dest-notes').value = '';
+        openModal('modal-dest');
+        setTimeout(() => document.getElementById('f-dest-name').focus(), 50);
+      });
+    });
+
+    // Separate itinerary checkbox
+    tripContent.querySelectorAll('[data-group-sep]').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const t = getTrip(chk.dataset.sepTrip);
+        if (!t) return;
+        const sec = getSection(t, chk.dataset.groupSep);
+        if (!sec) return;
+        sec.separateItinerary = chk.checked;
+        if (chk.checked) sec.groupDestinations = sec.groupDestinations || [];
+        t.updatedAt = new Date().toISOString();
+        save();
+        renderTripDetail();
+      });
+    });
+
+    // View group itinerary button
+    tripContent.querySelectorAll('[data-view-group-itin]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        openGroupItinerary(btn.dataset.itinTrip, btn.dataset.viewGroupItin);
+      });
+    });
+
+    // Group destinations inline add
+    tripContent.querySelectorAll('[data-gdest-add]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const groupId = btn.dataset.gdestAdd;
+        const tripId = btn.dataset.gdestTrip;
+        const nameEl = tripContent.querySelector(`[data-gdest-name="${groupId}"]`);
+        const countryEl = tripContent.querySelector(`[data-gdest-country="${groupId}"]`);
+        const startEl = tripContent.querySelector(`[data-gdest-start="${groupId}"]`);
+        const endEl = tripContent.querySelector(`[data-gdest-end="${groupId}"]`);
+        const name = nameEl ? nameEl.value.trim() : '';
+        const country = countryEl ? countryEl.value.trim() : '';
+        if (!name && !country) { nameEl && nameEl.focus(); return; }
+        const t = getTrip(tripId);
+        if (!t) return;
+        const sec = getSection(t, groupId);
+        if (!sec) return;
+        sec.groupDestinations = sec.groupDestinations || [];
+        sec.groupDestinations.push({
+          id: uid(), name, country,
+          startDate: startEl ? startEl.value : '',
+          endDate: endEl ? endEl.value : '',
+          notes: ''
+        });
+        t.updatedAt = new Date().toISOString();
+        save();
+        renderTripDetail();
+      });
+    });
+
+    // Group destination delete
+    tripContent.querySelectorAll('[data-delete-gdest]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const destId = btn.dataset.deleteGdest;
+        const groupId = btn.dataset.gdestGroup;
+        const tripId = btn.dataset.gdestTrip;
+        const t = getTrip(tripId);
+        if (!t) return;
+        const sec = getSection(t, groupId);
+        if (!sec) return;
+        sec.groupDestinations = (sec.groupDestinations || []).filter(d => d.id !== destId);
+        t.updatedAt = new Date().toISOString();
+        save();
+        renderTripDetail();
+      });
+    });
+
+    // Group destination edit
+    tripContent.querySelectorAll('[data-edit-gdest]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const destId = btn.dataset.editGdest;
+        const groupId = btn.dataset.gdestGroup;
+        const tripId = btn.dataset.gdestTrip;
+        const t = getTrip(tripId);
+        if (!t) return;
+        const sec = getSection(t, groupId);
+        if (!sec) return;
+        const dest = (sec.groupDestinations || []).find(d => d.id === destId);
+        if (!dest) return;
+        state.editingDestId = destId;
+        state.currentTripId = tripId;
+        state.pendingDestGroupId = null;
+        state.addDestSectionContext = { isGroupDest: true, groupId, sectionId: null };
+        document.getElementById('modal-dest-title').textContent = 'Edit Destination';
+        document.getElementById('f-dest-name').value = dest.name;
+        document.getElementById('f-dest-country').value = dest.country || '';
+        document.getElementById('f-dest-start').value = dest.startDate || '';
+        document.getElementById('f-dest-end').value = dest.endDate || '';
+        document.getElementById('f-dest-notes').value = dest.notes || '';
         openModal('modal-dest');
         setTimeout(() => document.getElementById('f-dest-name').focus(), 50);
       });
@@ -2035,8 +2248,7 @@ function attachSectionEvents(trip) {
       save();
       // Refresh the display title if empty
       if (!item.title) {
-        const idx = sec.items.findIndex(i => i.id === itemId);
-        span.textContent = `Entry ${idx + 1}`;
+        span.textContent = `${sec.title || 'Entry'} entry`;
       }
     });
     span.addEventListener('keydown', e => {
@@ -2542,20 +2754,30 @@ function saveDest() {
   };
 
   if (state.editingDestId) {
-    // Update in trip.destinations
-    const dest = (trip.destinations || []).find(d => d.id === state.editingDestId);
-    if (dest) {
-      Object.assign(dest, destData);
+    // Check if it's a group destination edit
+    if (state.addDestSectionContext && state.addDestSectionContext.isGroupDest) {
+      const sec = getSection(trip, state.addDestSectionContext.groupId);
+      if (sec) {
+        const dest = (sec.groupDestinations || []).find(d => d.id === state.editingDestId);
+        if (dest) Object.assign(dest, destData);
+      }
+      state.addDestSectionContext = null;
     } else {
-      // Update in section items
-      for (const sec of (trip.sections || [])) {
-        if (sec.type === 'destinations') {
-          const sItem = (sec.items || []).find(d => d.id === state.editingDestId);
-          if (sItem) { Object.assign(sItem, destData); break; }
+      // Update in trip.destinations
+      const dest = (trip.destinations || []).find(d => d.id === state.editingDestId);
+      if (dest) {
+        Object.assign(dest, destData);
+      } else {
+        // Update in section items
+        for (const sec of (trip.sections || [])) {
+          if (sec.type === 'destinations') {
+            const sItem = (sec.items || []).find(d => d.id === state.editingDestId);
+            if (sItem) { Object.assign(sItem, destData); break; }
+          }
         }
       }
     }
-  } else if (state.addDestSectionContext) {
+  } else if (state.addDestSectionContext && !state.addDestSectionContext.isGroupDest) {
     // Add to section
     const sec = getSection(trip, state.addDestSectionContext.sectionId);
     if (sec) {
