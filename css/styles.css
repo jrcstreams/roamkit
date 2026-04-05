@@ -955,15 +955,15 @@ body {
 }
 
 .trip-ctrl-itinerary {
-  background: #f0fdfa;
-  color: #0f766e;
-  border: 1px solid #99f6e4;
+  background: white;
+  color: var(--text-muted);
+  border: 1px solid #d1d5db;
   padding: .28rem .65rem;
 }
 .trip-ctrl-itinerary:hover {
-  background: #ccfbf1;
-  color: #0d9488;
-  border-color: #5eead4;
+  background: var(--bg);
+  color: var(--text);
+  border-color: #9ca3af;
 }
 
 .trip-close-btn {
@@ -1338,9 +1338,8 @@ textarea.trip-dest-field { resize: vertical; min-height: 54px; }
   border-radius: var(--radius-sm);
   padding: .55rem .8rem;
   box-shadow: 0 1px 2px rgba(0,0,0,.04);
-  transition: border-left-color .15s;
+  user-select: none;
 }
-.itin-entry:hover { border-left-color: var(--primary); }
 .itin-entry-header {
   display: flex;
   align-items: center;
@@ -1389,7 +1388,7 @@ textarea.trip-dest-field { resize: vertical; min-height: 54px; }
 }
 .budget-row {
   display: grid;
-  grid-template-columns: 1fr .7fr 1.2fr auto;
+  grid-template-columns: 1.1fr .5fr 1fr auto;
   gap: .4rem;
   align-items: center;
 }
@@ -1780,9 +1779,9 @@ textarea.trip-dest-field { resize: vertical; min-height: 54px; }
 .item-body-controls:focus-within .btn-icon { opacity: 1; }
 
 .item-fields {
-  padding: .65rem .7rem .7rem 1.4rem;
+  padding: .65rem .7rem .7rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: .55rem;
 }
 
@@ -1796,9 +1795,6 @@ textarea.trip-dest-field { resize: vertical; min-height: 54px; }
 }
 
 .field-drag-handle {
-  position: absolute;
-  left: -16px;
-  top: 3px;
   cursor: grab;
   color: var(--text-light);
   font-size: .78rem;
@@ -1807,13 +1803,15 @@ textarea.trip-dest-field { resize: vertical; min-height: 54px; }
   user-select: none;
   -webkit-touch-callout: none;
   touch-action: none;
-  width: 12px;
+  width: 14px;
   text-align: center;
-  opacity: 0;
+  flex-shrink: 0;
+  opacity: 0.3;
   transition: opacity .15s;
   padding: 0;
 }
-.field-drag-handle:active { cursor: grabbing; }
+.field-drag-handle:hover { opacity: 0.8; }
+.field-drag-handle:active { cursor: grabbing; opacity: 1; }
 .field-group:hover .field-drag-handle { opacity: 0.6; }
 
 .field-label {
@@ -2441,9 +2439,8 @@ textarea { resize: vertical; }
   .trip-desc { font-size: .85rem; }
   .trip-header-top { gap: .5rem; margin-bottom: .65rem; }
   .trip-header-meta-actions { gap: .25rem; }
-  .trip-control-panel { gap: .2rem; padding-top: .5rem; }
-  .trip-ctrl-primary { padding: .32rem .75rem; }
-  .trip-ctrl-btn { font-size: .77rem; }
+  .trip-control-panel { gap: .35rem; padding-top: .5rem; }
+  .trip-ctrl-btn { font-size: .79rem; padding: .3rem .6rem; }
 
   .trip-content { padding: .85rem .9rem; gap: .85rem; }
 
@@ -2454,7 +2451,7 @@ textarea { resize: vertical; }
   .parent-section-body { padding: .65rem .85rem; }
 
   .item-card-header { padding: .5rem .7rem; }
-  .item-fields { padding: .65rem .65rem .65rem 1.4rem; gap: .5rem; grid-template-columns: 1fr; }
+  .item-fields { padding: .65rem .65rem .65rem; gap: .5rem; grid-template-columns: 1fr; }
 
   /* Controls always fully visible on touch (no hover) */
   .section-body-controls .btn-icon,
@@ -2574,8 +2571,28 @@ textarea { resize: vertical; }
   .trip-content { padding: .7rem .75rem; gap: .65rem; }
   .trip-header-inner { padding: .65rem .75rem .55rem; }
   .trip-header-meta-actions { gap: .25rem; }
-  .trip-control-panel { row-gap: .3rem; }
-  .trip-ctrl-primary { flex: 1; justify-content: center; min-width: 100px; }
+  .trip-control-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .4rem;
+  }
+  .trip-ctrl-primary,
+  .trip-ctrl-secondary {
+    justify-content: center;
+    padding: .38rem .5rem;
+  }
+  .trip-ctrl-itinerary {
+    grid-column: 1 / -1;
+    justify-content: center;
+    padding: .38rem .5rem;
+  }
+  .trip-ctrl-sep { display: none; }
+  .trip-ctrl-expand-pair {
+    grid-column: 1 / -1;
+    justify-content: center;
+    gap: .4rem;
+  }
+  .trip-ctrl-ghost { padding: .35rem .7rem; }
   .ctrl-lbl { display: none; }
   .trip-ctrl-icon-btn { padding: .3rem .48rem; }
   .content-section-header { padding: .6rem .75rem; }
